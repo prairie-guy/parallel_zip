@@ -40,17 +40,27 @@ See the [GNU parallel installation guide](https://www.gnu.org/software/parallel/
 
 ### Installing parallel_zip
 
+This is a single-file module. The simplest way to install:
+
+```bash
+# Clone and copy the module to your project
+git clone https://github.com/prairie-guy/parallel_zip.git
+cp parallel_zip/parallel_zip.py /path/to/your/project/
+```
+
+#### Alternative: Install with pip 
 ```bash
 git clone https://github.com/prairie-guy/parallel_zip.git
 cd parallel_zip
 pip install .
 ```
 
-For development:
+### Uninstalling: Uninstall with pip
 ```bash
-git clone https://github.com/prairie-guy/parallel_zip.git
-cd parallel_zip
-pip install -e .
+pip uninstall parallel_zip
+# If that fails, manually remove:
+rm -rf $(pip show parallel_zip | grep Location | cut -d' ' -f2)/parallel_zip*
+rm -rf parallel_zip.egg-info/  # if in project directory
 ```
 
 ## Quick Start
