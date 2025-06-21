@@ -66,7 +66,7 @@ rm -rf parallel_zip.egg-info/  # if in project directory
 ## Quick Start
 
 ```python
-from parallel_zip import parallel_zip, Cross, sh
+from parallel_zip import parallel_zip, Cross
 
 # Basic usage - run a command on multiple files
 result = parallel_zip("wc -l {file}", file=["file1.txt", "file2.txt"])
