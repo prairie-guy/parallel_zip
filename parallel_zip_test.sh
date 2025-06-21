@@ -38,7 +38,7 @@ os.chdir(test_dir)
 # Create test files for our tests
 with open("file1.txt", "w") as f:
     f.write("This is test file 1\n")
-    
+
 with open("file2.txt", "w") as f:
     f.write("This is test file 2\n")
 
@@ -90,16 +90,16 @@ except Exception as e:
 # Test 4: Cross product functionality
 print("\n=== Test 4: Cross product functionality ===")
 print("""Invocation: parallel_zip(
-    "echo 'Processing {file} with {mode}'", 
-    file=["file1.txt", "file2.txt"], 
-    cross=[{"mode": ["fast", "thorough"]}], 
+    "echo 'Processing {file} with {mode}'",
+    file=["file1.txt", "file2.txt"],
+    cross=[{"mode": ["fast", "thorough"]}],
     verbose=True
 )""")
 try:
     result4 = parallel_zip(
-        "echo 'Processing {file} with {mode}'", 
-        file=["file1.txt", "file2.txt"], 
-        cross=[{"mode": ["fast", "thorough"]}], 
+        "echo 'Processing {file} with {mode}'",
+        file=["file1.txt", "file2.txt"],
+        cross=[{"mode": ["fast", "thorough"]}],
         verbose=True
     )
     print(f"Result 4: {result4}")
@@ -111,14 +111,14 @@ except Exception as e:
 # Test 5: Test awk command with complex syntax
 print("\n=== Test 5: Awk command with complex syntax ===")
 print("""Invocation: parallel_zip(
-    "awk -F, '{{print $1,$2}}' {file}", 
-    file="data.csv", 
+    "awk -F, '{{print $1,$2}}' {file}",
+    file="data.csv",
     verbose=True
 )""")
 try:
     result5 = parallel_zip(
-        "awk -F, '{{print $1,$2}}' {file}", 
-        file="data.csv", 
+        "awk -F, '{{print $1,$2}}' {file}",
+        file="data.csv",
         verbose=True
     )
     print(f"Result 5: {result5}")
@@ -131,16 +131,16 @@ except Exception as e:
 print("\n=== Test 6: Multiple parameters and complex command ===")
 print("""Invocation: parallel_zip(
     "head -{lines} {file} | cut -d, -f{columns}",
-    file=["data.csv"], 
-    lines=2, 
+    file=["data.csv"],
+    lines=2,
     columns="1,2",
     verbose=True
 )""")
 try:
     result6 = parallel_zip(
         "head -{lines} {file} | cut -d, -f{columns}",
-        file=["data.csv"], 
-        lines=2, 
+        file=["data.csv"],
+        lines=2,
         columns="1,2",
         verbose=True
     )
@@ -309,7 +309,7 @@ print("""Invocation: samples = ['U', 'E']
     out_path = 'map'
     parallel_zip(\"\"\"
     hisat-3n --index {ref_path}/{ref}.fa -p 6 --base-change C,T -1 {in_path}/{R1}.fq.gz -2 {in_path}/{R2}.fq.gz -S {out_path}/{sample}.sam
-    \"\"\", 
+    \"\"\",
         R1=[f'{sample}_R1' for sample in samples],
         R2=[f'{sample}_R2' for sample in samples],
         cross=[{'sample': samples}, {'ref': refs}],
@@ -323,7 +323,7 @@ try:
     out_path = 'map'
     result13 = parallel_zip("""
     hisat-3n --index {ref_path}/{ref}.fa -p 6 --base-change C,T -1 {in_path}/{R1}.fq.gz -2 {in_path}/{R2}.fq.gz -S {out_path}/{sample}.sam
-    """, 
+    """,
         R1=[f'{sample}_R1' for sample in samples],
         R2=[f'{sample}_R2' for sample in samples],
         cross=[{'sample': samples}, {'ref': refs}],
@@ -423,7 +423,7 @@ print("""Invocation: samples = ['U', 'E']
     out_path = 'map'
     parallel_zip(\"\"\"
     hisat-3n --index {ref_path}/{ref}.fa -p 6 --base-change C,T -1 {in_path}/{R1}.fq.gz -2 {in_path}/{R2}.fq.gz -S {out_path}/{sample}.sam
-    \"\"\", 
+    \"\"\",
         R1=[f'{sample}_R1' for sample in samples],
         R2=[f'{sample}_R2' for sample in samples],
         cross=Cross(
@@ -440,7 +440,7 @@ try:
     out_path = 'map'
     result17 = parallel_zip("""
     hisat-3n --index {ref_path}/{ref}.fa -p 6 --base-change C,T -1 {in_path}/{R1}.fq.gz -2 {in_path}/{R2}.fq.gz -S {out_path}/{sample}.sam
-    """, 
+    """,
         R1=[f'{sample}_R1' for sample in samples],
         R2=[f'{sample}_R2' for sample in samples],
         cross=Cross(
@@ -455,6 +455,94 @@ except Exception as e:
     print(f"Exception: {e}")
     test_results.append(("Cross helper function in RNA-seq pipeline example", "ERROR"))
 
+# NEW TEST 18: Command with no parameters (testing the fix)
+print("\n=== Test 18: Command with no parameters ===")
+print("Invocation: parallel_zip(\"ls\", verbose=True)")
+try:
+    result18 = parallel_zip("ls", verbose=True)
+    print(f"Result 18: {result18}")
+    # Should run successfully and list current directory
+    test_results.append(("Command with no parameters", "PASS" if result18 else "FAIL"))
+except Exception as e:
+    print(f"Exception: {e}")
+    test_results.append(("Command with no parameters", "ERROR"))
+
+# NEW TEST 19: Command with no parameters in dry run mode
+print("\n=== Test 19: Command with no parameters (dry run) ===")
+print("Invocation: parallel_zip(\"echo 'Hello World'\", dry_run=True)")
+try:
+    result19 = parallel_zip("echo 'Hello World'", dry_run=True)
+    print(f"Result 19: {result19}")
+    # Should return a list with the command
+    test_results.append(("Command with no parameters (dry run)", "PASS" if result19 == ["echo 'Hello World'"] else "FAIL"))
+except Exception as e:
+    print(f"Exception: {e}")
+    test_results.append(("Command with no parameters (dry run)", "ERROR"))
+
+# NEW TEST 20: Verify verbose output doesn't show misleading warnings
+print("\n=== Test 20: Verify no misleading warnings in verbose mode ===")
+print("Invocation: parallel_zip(\"echo 'Test'\", verbose=True)")
+print("(Note: This test passes if no 'warning' text appears in output)")
+try:
+    # Capture stdout to check for warning text
+    import io
+    from contextlib import redirect_stdout
+
+    f = io.StringIO()
+    with redirect_stdout(f):
+        result20 = parallel_zip("echo 'Test'", verbose=True)
+
+    captured_output = f.getvalue()
+    print(f"Captured output: {captured_output}")
+    print(f"Result 20: {result20}")
+
+    # Test passes if there's no "warning" in the output
+    has_warning = "warning" in captured_output.lower()
+    test_results.append(("No misleading warnings in verbose mode", "PASS" if not has_warning and result20 else "FAIL"))
+except Exception as e:
+    print(f"Exception: {e}")
+    test_results.append(("No misleading warnings in verbose mode", "ERROR"))
+
+# NEW TEST 21: Command with only cross parameters and no named parameters
+print("\n=== Test 21: Command with only cross parameters and no named parameters ===")
+print("""Invocation: parallel_zip(
+    "echo 'Mode: {mode}'",
+    cross=[{"mode": ["test1", "test2"]}],
+    verbose=True
+)""")
+try:
+    result21 = parallel_zip(
+        "echo 'Mode: {mode}'",
+        cross=[{"mode": ["test1", "test2"]}],
+        verbose=True
+    )
+    print(f"Result 21: {result21}")
+    test_results.append(("Command with only cross parameters", "PASS" if result21 and "test1" in result21 and "test2" in result21 else "FAIL"))
+except Exception as e:
+    print(f"Exception: {e}")
+    test_results.append(("Command with only cross parameters", "ERROR"))
+
+# NEW TEST 22: Complex command with no parameters
+print("\n=== Test 22: Complex multi-line command with no parameters ===")
+print("""Invocation: complex_no_params = \"\"\"
+    pwd
+    date
+    echo "Done"
+    \"\"\"
+    parallel_zip(complex_no_params, verbose=True)""")
+try:
+    complex_no_params = """
+    pwd
+    date
+    echo "Done"
+    """
+    result22 = parallel_zip(complex_no_params, verbose=True)
+    print(f"Result 22: {result22}")
+    test_results.append(("Complex multi-line command with no parameters", "PASS" if result22 and "Done" in result22 else "FAIL"))
+except Exception as e:
+    print(f"Exception: {e}")
+    test_results.append(("Complex multi-line command with no parameters", "ERROR"))
+
 # Clean up test directories
 for i in [1, 2]:
     try:
@@ -465,10 +553,10 @@ for i in [1, 2]:
 
 # Print a tabulated summary of all test results
 print("\n\n=== SUMMARY OF TEST RESULTS ===")
-print(f"{'Test Description':<45} | {'Result':<10}")
-print("-" * 58)
+print(f"{'Test Description':<55} | {'Result':<10}")
+print("-" * 68)
 for description, result in test_results:
-    print(f"{description:<45} | {result:<10}")
+    print(f"{description:<55} | {result:<10}")
 
 # Calculate overall pass rate
 pass_count = sum(1 for _, result in test_results if result == "PASS")

@@ -131,8 +131,8 @@ def zipper(cross=None, **named_vals):
             return result
         return [{}]
 
-
-    if not named_vals and cross is None: return("Usage: zipper(name1=val1, name2=val2, ..., cross={'k':vs} | [{'k1':vs1} ...] )")
+    if not named_vals and cross is None: return [{}]
+    #if not named_vals and cross is None: return("Usage: zipper(name1=val1, name2=val2, ..., cross={'k':vs} | [{'k1':vs1} ...] )")
     if cross is not None:
         if isinstance(cross, dict) and len(cross) > 1:
             raise TypeError("Cross parameter as a dictionary must contain only one key. For multiple keys, use a list of single-key dictionaries: cross=[{'key1': values}, {'key2': values}]")
@@ -284,6 +284,16 @@ def parallel_zip(command, cross=None, verbose=False, dry_run=False, java_memory=
         TypeError: If cross parameter is not properly formatted.
         ValueError: If named parameters contain multiple lists of different lengths.
 
+    IMPORTANT: Use single quotes to protect $ from shell expansion:
+       parallel_zip("awk '{print $5}' file.txt", verbose=True)        # Correct - $ is protected
+       parallel_zip("grep 'file$' *.txt", verbose=True)                # Correct - $ is protected
+       parallel_zip("sed 's/^$/blank/' {file}", file="data.txt", verbose=True)  # Correct - $ is protected
+       parallel_zip('awk "{print $5}" file.txt', verbose=True)         # WRONG - $ gets expanded to empty
+
+   This applies to any tool that uses $ in its syntax: awk, sed, grep,
+   perl, regex patterns, etc. The shell will expand $var before the tool
+   sees it unless protected by single quotes.
+
     Examples:
         >>> parallel_zip("ls {dir}", dir="/tmp", verbose=True)
         # Lists contents of /tmp directory
@@ -381,8 +391,35 @@ def parallel_zip(command, cross=None, verbose=False, dry_run=False, java_memory=
         if proc.stderr: print(f'Error details:\n{proc.stderr}')
         return None
 
-    if verbose and proc.stderr: print(f'parallel_zip warning:\n{proc.stderr}')
-
     if verbose: return proc.stdout
 
     return None
+
+
+def sh(command, lines=True):
+   """Execute a command with environment variable substitution.
+
+   A simple wrapper around parallel_zip for quick shell command execution.
+   Variables in {braces} are substituted from the calling environment.
+
+   IMPORTANT: Use single quotes to protect $ from shell expansion:
+       sh("awk '{print $5}'")        # Correct - $ is protected
+       sh("grep 'file$'")            # Correct - $ is protected
+       sh("sed 's/^$/blank/'")       # Correct - $ is protected
+       sh('awk "{print $5}"')        # WRONG - $ gets expanded to empty
+
+   This applies to any tool that uses $ in its syntax: awk, sed, grep,
+   perl, regex patterns, etc. The shell will expand $var before the tool
+   sees it unless protected by single quotes.
+
+   Args:
+       command (str): Command to execute with {var} substitutions
+       lines (bool): If True, return output as list of lines. Default True.
+
+   Returns:
+       list or str: Command output as list of lines, or string if lines=False
+   """
+   output = parallel_zip(command, verbose=True)
+   if lines and output:
+       return output.splitlines()
+   return output
