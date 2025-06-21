@@ -431,7 +431,12 @@ A: Use `pz()` for simple commands or when you need the output for further Python
 
 ## Changelog
 
-### v1.1.0 (Current)
+### v1.2.0 (Current)
+- Changed quick shell function from `sh()` to `pz()` for clarity
+- Added dedicated test suite for `pz()` function (pz_test.sh)
+- All previous v1.1.0 changes included
+
+### v1.1.0
 - Added `pz()` function for simple shell command execution
 - Fixed: Commands without parameters now work (e.g., `parallel_zip("ls", verbose=True)`)
 - Removed misleading "warning" messages in verbose mode

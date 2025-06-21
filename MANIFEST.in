@@ -1,3 +1,4 @@
 include README.md
 include parallel_zip_test.sh
+include pz_test.sh
 include parallel_zip.py

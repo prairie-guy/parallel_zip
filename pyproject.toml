@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "parallel_zip"
-version = "1.1.0"
+version = "1.2.0"
 description = "A Python wrapper for GNU parallel with elegant parameter substitution and cross-product functionality"
 readme = "README.md"
 requires-python = ">=3.6"
