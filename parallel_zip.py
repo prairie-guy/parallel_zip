@@ -396,17 +396,17 @@ def parallel_zip(command, cross=None, verbose=False, dry_run=False, java_memory=
     return None
 
 
-def sh(command, lines=True):
+def pz(command, lines=True):
    """Execute a command with environment variable substitution.
 
    A simple wrapper around parallel_zip for quick shell command execution.
    Variables in {braces} are substituted from the calling environment.
 
    IMPORTANT: Use single quotes to protect $ from shell expansion:
-       sh("awk '{print $5}'")        # Correct - $ is protected
-       sh("grep 'file$'")            # Correct - $ is protected
-       sh("sed 's/^$/blank/'")       # Correct - $ is protected
-       sh('awk "{print $5}"')        # WRONG - $ gets expanded to empty
+       pz("awk '{print $5}'")        # Correct - $ is protected
+       pz("grep 'file$'")            # Correct - $ is protected
+       pz("sed 's/^$/blank/'")       # Correct - $ is protected
+       pz('awk "{print $5}"')        # WRONG - $ gets expanded to empty
 
    This applies to any tool that uses $ in its syntax: awk, sed, grep,
    perl, regex patterns, etc. The shell will expand $var before the tool

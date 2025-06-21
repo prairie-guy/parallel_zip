@@ -10,7 +10,7 @@ A Python wrapper for GNU parallel that provides an elegant interface for running
 - **Python expression evaluation**: Embed Python expressions in command templates
 - **Multi-line command support**: Commands spanning multiple lines are automatically joined
 - **Dry run capability**: Preview commands before execution
-- **Quick shell execution**: New `sh()` function for simple command execution
+- **Quick shell execution**: New `pz()` function for simple command execution
 - **Leverages GNU parallel**: Inherits all the performance and reliability benefits of GNU parallel
 
 ## Installation
@@ -87,15 +87,15 @@ commands = parallel_zip(
     dry_run=True
 )
 
-# NEW: Simple shell command execution with sh()
-from parallel_zip import sh
+# NEW: Simple shell command execution with pz()
+from parallel_zip import pz
 
 # Quick shell commands with automatic line splitting
-files = sh("ls -la")  # Returns list of lines
-sizes = sh("ls -la | awk '{print $5}'")  # Note: use single quotes for $
+files = pz("ls -la")  # Returns list of lines
+sizes = pz("ls -la | awk '{print $5}'")  # Note: use single quotes for $
 
 # Get raw string output
-output = sh("find . -name '*.txt'", lines=False)
+output = pz("find . -name '*.txt'", lines=False)
 ```
 
 ## Basic Usage
@@ -148,25 +148,25 @@ parallel_zip(
 )
 ```
 
-### The `sh` Function - Quick Shell Commands
+### The `pz` Function - Quick Shell Commands
 
-For simple shell command execution, use the `sh` wrapper:
+For simple shell command execution, use the `pz` wrapper:
 
 ```python
-from parallel_zip import sh
+from parallel_zip import pz
 
 # Basic usage - returns list of lines by default
-files = sh("ls")
+files = pz("ls")
 print(files)  # ['file1.txt', 'file2.txt', ...]
 
 # Get raw string output
-output = sh("cat file.txt", lines=False)
+output = pz("cat file.txt", lines=False)
 
 # Use with pipes and shell features
-sh("ps aux | grep python | head -5")
+pz("ps aux | grep python | head -5")
 
 # Environment variable substitution still works
-home_files = sh("ls {HOME}")
+home_files = pz("ls {HOME}")
 ```
 
 ## Advanced Features
@@ -253,8 +253,8 @@ When using commands that contain `$` (like awk, sed, perl, regex), use single qu
 ```python
 # CORRECT - $ is protected by single quotes
 parallel_zip("awk '{print $5}' {file}", file=["data.txt"], verbose=True)
-sh("grep 'end$' file.txt")  # $ as regex anchor
-sh("sed 's/^$/blank/' file.txt")  # $ in sed pattern
+pz("grep 'end$' file.txt")  # $ as regex anchor
+pz("sed 's/^$/blank/' file.txt")  # $ in sed pattern
 
 # WRONG - $ gets expanded by shell (becomes empty)
 parallel_zip('awk "{print $5}" {file}', file=["data.txt"], verbose=True)
@@ -283,7 +283,7 @@ hisat2 --index {ref_path}/{ref} -1 {input_path}/{r1}.fq.gz -2 {input_path}/{r2}.
 )
 
 # For simpler cases without parallelization, you can also use:
-# sh("hisat2 --index genome.fa -1 sample_R1.fq -2 sample_R2.fq -S output.sam")
+# pz("hisat2 --index genome.fa -1 sample_R1.fq -2 sample_R2.fq -S output.sam")
 ```
 
 ### Variant Calling
@@ -352,7 +352,7 @@ Note: As of v1.1.0, commands without parameters are supported. Running `parallel
 
 ### Helper Functions
 - `Cross(**kwargs)`: Create cross-product parameter structure
-- `sh(command, lines=True)`: Quick shell command execution
+- `pz(command, lines=True)`: Quick shell command execution
 - `zipper()`: Lower-level interface for more control
 - `parse_command()`: Parse command templates
 - `execute_command()`: Execute individual commands
@@ -399,8 +399,11 @@ python -m pytest tests/  # Run tests (if available)
 ### Running Tests
 
 ```bash
-# Run the comprehensive test suite
+# Run the parallel_zip test suite
 bash parallel_zip_test.sh
+
+# Run the pz function test suite
+bash pz_test.sh
 
 # Or run individual tests
 python -c "from parallel_zip import parallel_zip; print('Import successful')"
@@ -423,13 +426,13 @@ A: `parallel_zip` is designed for shell command execution and provides higher-le
 **Q: Can I control the number of parallel jobs?**
 A: Yes! You can set GNU parallel options by setting the `PARALLEL` environment variable or by modifying the underlying command. Full control over GNU parallel options will be added in a future version.
 
-**Q: When should I use sh() vs parallel_zip()?**
-A: Use `sh()` for simple commands or when you need the output for further Python processing. Use `parallel_zip()` when you need parallelization, parameter substitution across multiple values, or cross-products.
+**Q: When should I use pz() vs parallel_zip()?**
+A: Use `pz()` for simple commands or when you need the output for further Python processing. Use `parallel_zip()` when you need parallelization, parameter substitution across multiple values, or cross-products.
 
 ## Changelog
 
 ### v1.1.0 (Current)
-- Added `sh()` function for simple shell command execution
+- Added `pz()` function for simple shell command execution
 - Fixed: Commands without parameters now work (e.g., `parallel_zip("ls", verbose=True)`)
 - Removed misleading "warning" messages in verbose mode
 - Added comprehensive documentation about shell quoting with $
