@@ -298,8 +298,32 @@ def parallel_zip(command, cross=None, verbose=False, lines=False, dry_run=False,
         - If verbose=True and lines=False: Output as string
         - Otherwise: None (commands run silently)
 
-    Examples
-    --------
+
+    Motivating Example
+    -----------------
+    # Python for-loop semantics with 'rational' variable substitution executed in parallel within bash shell
+
+    samples = ['U', 'E']
+    refs = ['28SrRNA', '18SrRNA']
+    ref_path = '~/reference'
+    in_path = 'trim'
+    out_path = 'map'
+    parallel_zip("""hisat-3n --index {ref_path}/{ref}.fa -p 6 --base-change C,T -1 {in_path}/{R1}.fq.gz -2 {in_path}/{R2}.fq.gz -S {out_path}/{sample}.sam""",
+                        R1=[f'{sample}_R1' for sample in samples],
+                        R2=[f'{sample}_R2' for sample in samples],
+                        cross= Cross(sample=samples, ref=refs),
+                    dry_run=True)
+    ['hisat-3n --index ~/reference/28SrRNA.fa -p 6 --base-change C,T -1 trim/U_R1.fq.gz -2 trim/U_R2.fq.gz -S map/U.sam',
+     'hisat-3n --index ~/reference/18SrRNA.fa -p 6 --base-change C,T -1 trim/U_R1.fq.gz -2 trim/U_R2.fq.gz -S map/U.sam',
+     'hisat-3n --index ~/reference/28SrRNA.fa -p 6 --base-change C,T -1 trim/U_R1.fq.gz -2 trim/U_R2.fq.gz -S map/E.sam',
+     'hisat-3n --index ~/reference/18SrRNA.fa -p 6 --base-change C,T -1 trim/U_R1.fq.gz -2 trim/U_R2.fq.gz -S map/E.sam',
+     'hisat-3n --index ~/reference/28SrRNA.fa -p 6 --base-change C,T -1 trim/E_R1.fq.gz -2 trim/E_R2.fq.gz -S map/U.sam',
+     'hisat-3n --index ~/reference/18SrRNA.fa -p 6 --base-change C,T -1 trim/E_R1.fq.gz -2 trim/E_R2.fq.gz -S map/U.sam',
+     'hisat-3n --index ~/reference/28SrRNA.fa -p 6 --base-change C,T -1 trim/E_R1.fq.gz -2 trim/E_R2.fq.gz -S map/E.sam',
+     'hisat-3n --index ~/reference/18SrRNA.fa -p 6 --base-change C,T -1 trim/E_R1.fq.gz -2 trim/E_R2.fq.gz -S map/E.sam']
+
+    More Examples
+    -------------
     # Dry run - see what commands would be executed
     parallel_zip("""
          echo -n '{ext} {fn} ' ; echo {fn} | grep {ext} || echo '*'
@@ -383,27 +407,6 @@ def parallel_zip(command, cross=None, verbose=False, lines=False, dry_run=False,
     that use exit codes to convey information rather than errors. With
     strict=False (default), these commands work as expected.
 
-
-    # Python style loop symantics with rational variable substitution executed in parallel within shell
-
-    >>> samples = ['U', 'E']
-    >>> refs = ['28SrRNA', '18SrRNA']
-    >>> ref_path = '~/reference'
-    >>> in_path = 'trim'
-    >>> out_path = 'map'
-    >>> parallel_zip("""hisat-3n --index {ref_path}/{ref}.fa -p 6 --base-change C,T -1 {in_path}/{R1}.fq.gz -2 {in_path}/{R2}.fq.gz -S {out_path}/{sample}.sam""",
-                        R1=[f'{sample}_R1' for sample in samples],
-                        R2=[f'{sample}_R2' for sample in samples],
-                        cross= Cross(sample=samples, ref=refs),
-                        dry_run=True)
-    >>> ['hisat-3n --index ~/reference/28SrRNA.fa -p 6 --base-change C,T -1 trim/U_R1.fq.gz -2 trim/U_R2.fq.gz -S map/U.sam',
-         'hisat-3n --index ~/reference/18SrRNA.fa -p 6 --base-change C,T -1 trim/U_R1.fq.gz -2 trim/U_R2.fq.gz -S map/U.sam',
-         'hisat-3n --index ~/reference/28SrRNA.fa -p 6 --base-change C,T -1 trim/U_R1.fq.gz -2 trim/U_R2.fq.gz -S map/E.sam',
-         'hisat-3n --index ~/reference/18SrRNA.fa -p 6 --base-change C,T -1 trim/U_R1.fq.gz -2 trim/U_R2.fq.gz -S map/E.sam',
-         'hisat-3n --index ~/reference/28SrRNA.fa -p 6 --base-change C,T -1 trim/E_R1.fq.gz -2 trim/E_R2.fq.gz -S map/U.sam',
-         'hisat-3n --index ~/reference/18SrRNA.fa -p 6 --base-change C,T -1 trim/E_R1.fq.gz -2 trim/E_R2.fq.gz -S map/U.sam',
-         'hisat-3n --index ~/reference/28SrRNA.fa -p 6 --base-change C,T -1 trim/E_R1.fq.gz -2 trim/E_R2.fq.gz -S map/E.sam',
-         'hisat-3n --index ~/reference/18SrRNA.fa -p 6 --base-change C,T -1 trim/E_R1.fq.gz -2 trim/E_R2.fq.gz -S map/E.sam']
     '''
 
     if java_memory:
