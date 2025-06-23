@@ -384,37 +384,26 @@ def parallel_zip(command, cross=None, verbose=False, lines=False, dry_run=False,
     strict=False (default), these commands work as expected.
 
 
-    # Motivating example: Running [nested] loops in parallel
-    >>>
-    samples = ['U', 'E']
-    refs = ['28SrRNA', '18SrRNA']
-    ref_path = '~/reference'
-    in_path = 'trim'
-    out_path = 'map'
+    # Python style loop symantics with rational variable substitution executed in parallel within shell
 
-    # Traditional approach with nested loops:
-    for R1, R2 in zip([f'{sample}_R1.fq.gz' for sample in samples], [f'{sample}_R2.fq.gz'for sample in samples]):
-         for sample in samples:
-             for ref in refs:
-                 print(f'hisat-3n --index {ref_path}/{ref}.fa -p 6 --base-change C,T -1 {in_path}/{R1} -2 {in_path}/{R2} -S {out_path}/{sample}.sam')
-
-    hisat-3n --index ~/reference//28SrRNA.fa -p 6 --base-change C,T  -1 trim/U_R1.fq.gz -2 trim/U_R2.fq.gz -S map/U.sam
-    hisat-3n --index ~/reference//18SrRNA.fa -p 6 --base-change C,T  -1 trim/U_R1.fq.gz -2 trim/U_R2.fq.gz -S map/U.sam
-    hisat-3n --index ~/reference//28SrRNA.fa -p 6 --base-change C,T  -1 trim/U_R1.fq.gz -2 trim/U_R2.fq.gz -S map/E.sam
-    hisat-3n --index ~/reference//18SrRNA.fa -p 6 --base-change C,T  -1 trim/U_R1.fq.gz -2 trim/U_R2.fq.gz -S map/E.sam
-    hisat-3n --index ~/reference//28SrRNA.fa -p 6 --base-change C,T  -1 trim/E_R1.fq.gz -2 trim/E_R2.fq.gz -S map/U.sam
-    hisat-3n --index ~/reference//18SrRNA.fa -p 6 --base-change C,T  -1 trim/E_R1.fq.gz -2 trim/E_R2.fq.gz -S map/U.sam
-    hisat-3n --index ~/reference//28SrRNA.fa -p 6 --base-change C,T  -1 trim/E_R1.fq.gz -2 trim/E_R2.fq.gz -S map/E.sam
-    hisat-3n --index ~/reference//18SrRNA.fa -p 6 --base-change C,T  -1 trim/E_R1.fq.gz -2 trim/E_R2.fq.gz -S map/E.sam
-
-    # Simplify loop and execute in parallel:
-    parallel_zip("""
-    hisat-3n --index {ref_path}/{ref}.fa -p 6 --base-change C,T -1 {in_path}/{R1}.fq.gz -2 {in_path}/{R2}.fq.gz -S {out_path}/{sample}.sam
-    """,
-        R1=[f'{sample}_R1' for sample in samples],
-        R2=[f'{sample}_R2' for sample in samples],
-        cross= Cross(sample=samples, ref=refs),
-                 dry_run=True)
+    >>> samples = ['U', 'E']
+    >>> refs = ['28SrRNA', '18SrRNA']
+    >>> ref_path = '~/reference'
+    >>> in_path = 'trim'
+    >>> out_path = 'map'
+    >>> parallel_zip("""hisat-3n --index {ref_path}/{ref}.fa -p 6 --base-change C,T -1 {in_path}/{R1}.fq.gz -2 {in_path}/{R2}.fq.gz -S {out_path}/{sample}.sam""",
+                        R1=[f'{sample}_R1' for sample in samples],
+                        R2=[f'{sample}_R2' for sample in samples],
+                        cross= Cross(sample=samples, ref=refs),
+                        dry_run=True)
+    >>> ['hisat-3n --index ~/reference/28SrRNA.fa -p 6 --base-change C,T -1 trim/U_R1.fq.gz -2 trim/U_R2.fq.gz -S map/U.sam',
+         'hisat-3n --index ~/reference/18SrRNA.fa -p 6 --base-change C,T -1 trim/U_R1.fq.gz -2 trim/U_R2.fq.gz -S map/U.sam',
+         'hisat-3n --index ~/reference/28SrRNA.fa -p 6 --base-change C,T -1 trim/U_R1.fq.gz -2 trim/U_R2.fq.gz -S map/E.sam',
+         'hisat-3n --index ~/reference/18SrRNA.fa -p 6 --base-change C,T -1 trim/U_R1.fq.gz -2 trim/U_R2.fq.gz -S map/E.sam',
+         'hisat-3n --index ~/reference/28SrRNA.fa -p 6 --base-change C,T -1 trim/E_R1.fq.gz -2 trim/E_R2.fq.gz -S map/U.sam',
+         'hisat-3n --index ~/reference/18SrRNA.fa -p 6 --base-change C,T -1 trim/E_R1.fq.gz -2 trim/E_R2.fq.gz -S map/U.sam',
+         'hisat-3n --index ~/reference/28SrRNA.fa -p 6 --base-change C,T -1 trim/E_R1.fq.gz -2 trim/E_R2.fq.gz -S map/E.sam',
+         'hisat-3n --index ~/reference/18SrRNA.fa -p 6 --base-change C,T -1 trim/E_R1.fq.gz -2 trim/E_R2.fq.gz -S map/E.sam']
     '''
 
     if java_memory:
