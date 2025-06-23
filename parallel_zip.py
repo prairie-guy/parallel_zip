@@ -249,7 +249,7 @@ def execute_command(commands, dry_run, verbose):
     else: proc = subprocess.run(["parallel", ":::", *processed_commands], capture_output=True, text=True)
     return proc, processed_commands
 
-def parallel_zip(command, cross=None, verbose=False, dry_run=False, java_memory=None,  **named_vals):
+def parallel_zip(command, cross=None, verbose=False, lines=False, dry_run=False, strict=False, java_memory=None,  **named_vals):
     """Runs commands in parallel by constructing commands from arguments.
 
     This function creates multiple command variations from templates and executes them in
@@ -387,16 +387,22 @@ def parallel_zip(command, cross=None, verbose=False, dry_run=False, java_memory=
     if dry_run: return proc_cmds
 
     if proc.returncode:
-        print(f'parallel_zip: error with return code {proc.returncode}')
-        if proc.stderr: print(f'Error details:\n{proc.stderr}')
-        return None
+        if strict:
+            print(f'parallel_zip: error with return code {proc.returncode}')
+            if proc.stderr:
+                print(f'Error details:\n{proc.stderr}')
+            return None
 
-    if verbose: return proc.stdout
+    if verbose:
+        if lines:
+            return proc.stdout.splitlines()
+        else:
+            return proc.stdout
 
     return None
 
 
-def pz(command, lines=True):
+def pz(command, lines=True, strict=False):
    """Execute a command with environment variable substitution.
 
    A simple wrapper around parallel_zip for quick shell command execution.
@@ -419,7 +425,7 @@ def pz(command, lines=True):
    Returns:
        list or str: Command output as list of lines, or string if lines=False
    """
-   output = parallel_zip(command, verbose=True)
+   output = parallel_zip(command, verbose=True, strict=strict)
    if lines and output:
        return output.splitlines()
    return output
