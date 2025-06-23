@@ -86,19 +86,19 @@ def zipper(cross=None, **named_vals):
                   single-key dictionaries
 
     Examples:
-        zipper(a=[1, 2], b=['x', 'y'])
+        >>> zipper(a=[1, 2], b=['x', 'y'])
         [{'a': '1', 'b': 'x'}, {'a': '2', 'b': 'y'}]
 
-        zipper(a=[1, 2], b='x')
+        >>> zipper(a=[1, 2], b='x')
         [{'a': '1', 'b': 'x'}, {'a': '2', 'b': 'x'}]
 
-        zipper(a=[1, 2], cross=[{'sample': ['A', 'B']}])
+        >>> zipper(a=[1, 2], cross=[{'sample': ['A', 'B']}])
         [{'a': '1', 'sample': 'A'}, {'a': '1', 'sample': 'B'},
          {'a': '2', 'sample': 'A'}, {'a': '2', 'sample': 'B'}]
 
-        zipper(in_path=['file1.txt', 'file2.txt'],
-                out_path=['out1.txt', 'out2.txt'],
-                cross=[{'sample': ['A', 'B', 'C']}])
+        >>> zipper(in_path=['file1.txt', 'file2.txt'],
+        ...        out_path=['out1.txt', 'out2.txt'],
+        ...        cross=[{'sample': ['A', 'B', 'C']}])
         # This will create 6 combinations: 2 files × 3 samples
     """
     def isiter(values):
@@ -250,172 +250,126 @@ def execute_command(commands, dry_run, verbose):
     return proc, processed_commands
 
 def parallel_zip(command, cross=None, verbose=False, lines=False, dry_run=False, strict=False, java_memory=None,  **named_vals):
-    '''Execute shell commands in parallel with parameter substitution.
+    """Runs commands in parallel by constructing commands from arguments.
 
-    Transform command templates into multiple commands by substituting parameters,
-    then execute them in parallel using GNU parallel. Perfect for batch processing,
-    parameter sweeps, and avoiding nested loops in data pipelines.
+    This function creates multiple command variations from templates and executes them in
+    parallel using GNU Parallel. Command templates contain variables in {name} syntax that
+    are replaced with values from named parameters and cross products. Python expressions
+    in curly braces are also evaluated.
 
-    Parameters
-    ----------
-    command : str
-        Command template with {parameter} placeholders. Multi-line commands are
-        automatically joined with &&. Python expressions in {expr} are evaluated.
-        Use {{text}} for literal braces (e.g., awk '{{print $1}}').
+    Args:
+        command (str): Command template with variables in {name} syntax.
+                      Multi-line commands are automatically joined with '&&'.
+                      Python expressions in {expr} are evaluated if not matching parameter names.
+                      Use double braces {{text}} for literal braces in output.
+        cross (dict or list, optional): Variables to expand in a cross-product fashion.
+                                       Should be either:
+                                       - None (default): No cross product is performed
+                                       - A single-key dict: The key-value pair is expanded as a cross product
+                                       - A list of single-key dictionaries: Each dict is treated as a separate
+                                         group of values for cross product expansion
+        verbose (bool, optional): If True, returns the stdout of the executed commands.
+        dry_run (bool, optional): If True, returns the commands that would be executed without running them.
+        java_memory (str, optional): Set max java memory: '4g', '8g', '16g' ...
+        **named_vals: Named variables to substitute in the template.
+                     List variables are processed in lockstep (like zip).
+                     Single values are broadcast to match the length of lists.
 
-    cross : dict, list of dicts, or Cross() result, optional
-        Parameters for cross-product expansion. Every combination is generated.
-        Example: cross=[{"mode": ["fast", "slow"]}, {"size": [1, 2]}]
+    Returns:
+        str or None: If dry_run is True, returns the commands that would be executed.
+                    If verbose is True, returns the stdout of GNU Parallel.
+                    Otherwise, returns None.
 
-    verbose : bool, default False
-        If True, return command output. Otherwise, run silently.
+    Raises:
+        TypeError: If cross parameter is not properly formatted.
+        ValueError: If named parameters contain multiple lists of different lengths.
 
-    lines : bool, default False
-        If True and verbose=True, return output as list of lines.
-        If False and verbose=True, return output as string.
-        Only applies when verbose=True.
+    IMPORTANT: Use single quotes to protect $ from shell expansion:
+       parallel_zip("awk '{print $5}' file.txt", verbose=True)        # Correct - $ is protected
+       parallel_zip("grep 'file$' *.txt", verbose=True)                # Correct - $ is protected
+       parallel_zip("sed 's/^$/blank/' {file}", file="data.txt", verbose=True)  # Correct - $ is protected
+       parallel_zip('awk "{print $5}" file.txt', verbose=True)         # WRONG - $ gets expanded to empty
 
-    dry_run : bool, default False
-        If True, return list of commands without executing them.
+   This applies to any tool that uses $ in its syntax: awk, sed, grep,
+   perl, regex patterns, etc. The shell will expand $var before the tool
+   sees it unless protected by single quotes.
 
-    strict : bool, default False
-        If True, treat any non-zero exit code as an error and stop.
-        If False, continue silently even if some commands fail.
-        Many Unix tools (grep, diff, test) use exit codes for information.
+    Examples:
+        >>> parallel_zip("ls {dir}", dir="/tmp", verbose=True)
+        # Lists contents of /tmp directory
 
-    java_memory : str, optional
-        Set Java heap size (e.g., '4g', '8g') for Java-based tools.
+        >>> parallel_zip("ls {dir}", dir=["/tmp", "/home"], verbose=True)
+        # Lists contents of both directories sequentially
 
-    **named_vals : keyword arguments
-        Parameters to substitute. Lists are processed in parallel (like zip).
-        Single values are broadcast to match list lengths.
+        >>> parallel_zip("echo 'File: {file}, Mode: {mode}'",
+        ...              file=["file1.txt", "file2.txt"],
+        ...              cross=[{"mode": ["read", "write"]}],
+        ...              verbose=True)
+        # Outputs all combinations of files and modes:
+        # File: file1.txt, Mode: read
+        # File: file1.txt, Mode: write
+        # File: file2.txt, Mode: read
+        # File: file2.txt, Mode: write
 
-    Returns
-    -------
-    str, list, or None
-        - If dry_run=True: List of commands that would be executed
-        - If verbose=True and lines=True: List of output lines
-        - If verbose=True and lines=False: Output as string
-        - Otherwise: None (commands run silently)
+        >>> commands = parallel_zip("cat {file} | grep {pattern} > {output}",
+        ...                        file=["data.csv"],
+        ...                        cross=[{"pattern": ["apple", "banana"]},
+        ...                               {"output": ["apple.txt", "banana.txt"]}],
+        ...                        dry_run=True)
+        # Returns: ['cat data.csv | grep apple > apple.txt',
+        #           'cat data.csv | grep apple > banana.txt',
+        #           'cat data.csv | grep banana > apple.txt',
+        #           'cat data.csv | grep banana > banana.txt']
 
-    Examples
-    --------
-    # Dry run - see what commands would be executed
-    parallel_zip("""
-         echo -n '{ext} {fn} ' ; echo {fn} | grep {ext} || echo '*'
-     """,
-         fn=["A.png", "B.svg", 'C.mat'],
-         cross=Cross(ext=['png', 'svg','mat']),
-         dry_run=True)
-    ["echo -n 'png A.png ' ; echo A.png | grep png || echo '*'",
-     "echo -n 'svg A.png ' ; echo A.png | grep svg || echo '*'",
-     "echo -n 'mat A.png ' ; echo A.png | grep mat || echo '*'",
-     "echo -n 'png B.svg ' ; echo B.svg | grep png || echo '*'",
-     "echo -n 'svg B.svg ' ; echo B.svg | grep svg || echo '*'",
-     "echo -n 'mat B.svg ' ; echo B.svg | grep mat || echo '*'",
-     "echo -n 'png C.mat ' ; echo C.mat | grep png || echo '*'",
-     "echo -n 'svg C.mat ' ; echo C.mat | grep svg || echo '*'",
-     "echo -n 'mat C.mat ' ; echo C.mat | grep mat || echo '*'"]
+        >>> # Multi-line commands are joined with &&
+        >>> complex_cmd = '''
+        ...     mkdir -p {dir}
+        ...     echo "Created directory" > {dir}/info.txt
+        ...     ls -la {dir}
+        ... '''
+        >>> parallel_zip(complex_cmd, dir=["test1", "test2"], verbose=True)
+        # Creates directories, writes info files, and lists contents
 
-    # Execute and get output as string (verbose=True)
-    parallel_zip("""
-         echo -n '{ext} {fn} ' ; echo {fn} | grep {ext} || echo '*'
-     """,
-         fn=["A.png", "B.svg", 'C.mat'],
-         cross=Cross(ext=['png', 'svg','mat']),
-         verbose=True)
-    'png A.png A.png\nsvg A.png *\nmat A.png *\npng B.svg *\nsvg B.svg B.svg\nmat B.svg *\npng C.mat *\nsvg C.mat *\nmat C.mat C.mat\n'
+        >>> # Python expressions are evaluated
+        >>> parallel_zip("echo 'Double of {num} is {int(num)*2}'",
+        ...              num=[10, 20, 30],
+        ...              verbose=True)
+        # Outputs: Double of 10 is 20
+        #          Double of 20 is 40
+        #          Double of 30 is 60
 
-    # Execute and get output as list of lines (verbose=True, lines=True)
-    parallel_zip("""
-         echo -n '{ext} {fn} ' ; echo {fn} | grep {ext} || echo '*'
-     """,
-         fn=["A.png", "B.svg", 'C.mat'],
-         cross=Cross(ext=['png', 'svg','mat']),
-         verbose=True, lines=True)
-    ['png A.png A.png',
-     'svg A.png *',
-     'mat A.png *',
-     'png B.svg *',
-     'svg B.svg B.svg',
-     'mat B.svg *',
-     'png C.mat *',
-     'svg C.mat *',
-     'mat C.mat C.mat']
+        >>> # Motivating example: simplifying complex nested loops
+        >>> samples = ['U', 'E']
+        >>> refs = ['28SrRNA', '18SrRNA']
+        >>> ref_path = '~/reference'
+        >>> in_path = 'trim'
+        >>> out_path = 'map'
+        >>>
+        >>> # Traditional approach with nested loops:
+        >>> for R1, R2 in zip([f'{sample}_R1.fq.gz'for sample in samples], [f'{sample}_R2.fq.gz'for sample in samples]):
+        ...     for sample in samples:
+        ...         for ref in refs:
+        ...             print(f'hisat-3n --index {ref_path}/{ref}.fa -p 6 --base-change C,T -1 {in_path}/{R1} -2 {in_path}/{R2} -S {out_path}/{sample}.sam')
+        ...
+        hisat-3n --index ~/reference//28SrRNA.fa -p 6 --base-change C,T  -1 trim/U_R1.fq.gz -2 trim/U_R2.fq.gz -S map/U.sam
+        hisat-3n --index ~/reference//18SrRNA.fa -p 6 --base-change C,T  -1 trim/U_R1.fq.gz -2 trim/U_R2.fq.gz -S map/U.sam
+        hisat-3n --index ~/reference//28SrRNA.fa -p 6 --base-change C,T  -1 trim/U_R1.fq.gz -2 trim/U_R2.fq.gz -S map/E.sam
+        hisat-3n --index ~/reference//18SrRNA.fa -p 6 --base-change C,T  -1 trim/U_R1.fq.gz -2 trim/U_R2.fq.gz -S map/E.sam
+        hisat-3n --index ~/reference//28SrRNA.fa -p 6 --base-change C,T  -1 trim/E_R1.fq.gz -2 trim/E_R2.fq.gz -S map/U.sam
+        hisat-3n --index ~/reference//18SrRNA.fa -p 6 --base-change C,T  -1 trim/E_R1.fq.gz -2 trim/E_R2.fq.gz -S map/U.sam
+        hisat-3n --index ~/reference//28SrRNA.fa -p 6 --base-change C,T  -1 trim/E_R1.fq.gz -2 trim/E_R2.fq.gz -S map/E.sam
+        hisat-3n --index ~/reference//18SrRNA.fa -p 6 --base-change C,T  -1 trim/E_R1.fq.gz -2 trim/E_R2.fq.gz -S map/E.sam
 
-    # Strict mode - stop on any non-zero exit code (strict=True)
-    # Note: removed || echo '*' so grep returns exit code 1 when no match
-    # With strict=True, any non-zero exit causes error (6 of 9 commands failed)
-    parallel_zip("""
-         echo -n '{ext} {fn} ' ; echo {fn} | grep {ext}
-     """,
-         fn=["A.png", "B.svg", 'C.mat'],
-         cross=Cross(ext=['png', 'svg','mat']),
-         strict=True)
-    parallel_zip: error with return code 6
-
-    # Strict mode with verbose shows which commands were attempted (strict=True, verbose=True)
-    parallel_zip("""
-         echo -n '{ext} {fn} ' ; echo {fn} | grep {ext}
-     """,
-         fn=["A.png", "B.svg", 'C.mat'],
-         cross=Cross(ext=['png', 'svg','mat']),
-         strict=True, verbose=True)
-    parallel_zip: error with return code 6
-    Error details:
-    echo -n 'png A.png ' ; echo A.png | grep png
-    echo -n 'svg A.png ' ; echo A.png | grep svg
-    echo -n 'mat A.png ' ; echo A.png | grep mat
-    echo -n 'png B.svg ' ; echo B.svg | grep png
-    echo -n 'svg B.svg ' ; echo B.svg | grep svg
-    echo -n 'mat B.svg ' ; echo B.svg | grep mat
-    echo -n 'png C.mat ' ; echo C.mat | grep png
-    echo -n 'svg C.mat ' ; echo C.mat | grep svg
-    echo -n 'mat C.mat ' ; echo C.mat | grep mat
-
-    Notes
-    -----
-    IMPORTANT: When using $ in commands (awk, sed, regex), use single quotes:
-        CORRECT:  parallel_zip("awk '{print $1}' {file}", ...)
-        WRONG:    parallel_zip('awk "{print $1}" {file}', ...)
-
-    The strict parameter is crucial for commands like grep, rga, diff, test
-    that use exit codes to convey information rather than errors. With
-    strict=False (default), these commands work as expected.
-
-
-    # Motivating example: Running [nested] loops in parallel
-    >>>
-    samples = ['U', 'E']
-    refs = ['28SrRNA', '18SrRNA']
-    ref_path = '~/reference'
-    in_path = 'trim'
-    out_path = 'map'
-
-    # Traditional approach with nested loops:
-    for R1, R2 in zip([f'{sample}_R1.fq.gz' for sample in samples], [f'{sample}_R2.fq.gz'for sample in samples]):
-         for sample in samples:
-             for ref in refs:
-                 print(f'hisat-3n --index {ref_path}/{ref}.fa -p 6 --base-change C,T -1 {in_path}/{R1} -2 {in_path}/{R2} -S {out_path}/{sample}.sam')
-
-    hisat-3n --index ~/reference//28SrRNA.fa -p 6 --base-change C,T  -1 trim/U_R1.fq.gz -2 trim/U_R2.fq.gz -S map/U.sam
-    hisat-3n --index ~/reference//18SrRNA.fa -p 6 --base-change C,T  -1 trim/U_R1.fq.gz -2 trim/U_R2.fq.gz -S map/U.sam
-    hisat-3n --index ~/reference//28SrRNA.fa -p 6 --base-change C,T  -1 trim/U_R1.fq.gz -2 trim/U_R2.fq.gz -S map/E.sam
-    hisat-3n --index ~/reference//18SrRNA.fa -p 6 --base-change C,T  -1 trim/U_R1.fq.gz -2 trim/U_R2.fq.gz -S map/E.sam
-    hisat-3n --index ~/reference//28SrRNA.fa -p 6 --base-change C,T  -1 trim/E_R1.fq.gz -2 trim/E_R2.fq.gz -S map/U.sam
-    hisat-3n --index ~/reference//18SrRNA.fa -p 6 --base-change C,T  -1 trim/E_R1.fq.gz -2 trim/E_R2.fq.gz -S map/U.sam
-    hisat-3n --index ~/reference//28SrRNA.fa -p 6 --base-change C,T  -1 trim/E_R1.fq.gz -2 trim/E_R2.fq.gz -S map/E.sam
-    hisat-3n --index ~/reference//18SrRNA.fa -p 6 --base-change C,T  -1 trim/E_R1.fq.gz -2 trim/E_R2.fq.gz -S map/E.sam
-
-    # Simplify loop and execute in parallel:
-    parallel_zip("""
-    hisat-3n --index {ref_path}/{ref}.fa -p 6 --base-change C,T -1 {in_path}/{R1}.fq.gz -2 {in_path}/{R2}.fq.gz -S {out_path}/{sample}.sam
-    """,
-        R1=[f'{sample}_R1' for sample in samples],
-        R2=[f'{sample}_R2' for sample in samples],
-        cross= Cross(sample=samples, ref=refs),
-                 dry_run=True)
-    '''
+        >>> # Simplified with parallel_zip:
+        >>> parallel_zip('''
+        ... hisat-3n --index {ref_path}/{ref}.fa -p 6 --base-change C,T -1 {in_path}/{R1}.fq.gz -2 {in_path}/{R2}.fq.gz -S {out_path}/{sample}.sam
+        ... ''',
+        ...              R1=[f'{sample}_R1' for sample in samples],
+        ...              R2=[f'{sample}_R2' for sample in samples],
+        ...              cross=[{'sample': samples}, {'ref': refs}],
+        ...              dry_run=True)
+        # This generates all 8 command combinations in a single call
+    """
 
     if java_memory:
         old_setting = os.environ.get('_JAVA_OPTIONS', '')
