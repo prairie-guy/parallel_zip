@@ -245,8 +245,19 @@ def execute_command(commands, dry_run, verbose):
         processed_commands.append(processed_command)
 
     if dry_run: return [], processed_commands
-    if verbose: proc = subprocess.run(["parallel", "--verbose", ":::", *processed_commands], capture_output=True, text=True)
-    else: proc = subprocess.run(["parallel", ":::", *processed_commands], capture_output=True, text=True)
+
+    # gnu
+    #if verbose: proc = subprocess.run(["parallel", "--verbose", ":::", *processed_commands], capture_output=True, text=True)
+    #else: proc = subprocess.run(["parallel", ":::", *processed_commands], capture_output=True, text=True)
+
+    # rust orig
+    #if verbose: proc = subprocess.run(["rust-parallel", "/bin/bash", "-c", ":::", *processed_commands], capture_output=True, text=True)
+    #else: proc = subprocess.run(["rust-parallel", "/bin/bash", "-c", ":::", *processed_commands], capture_output=True, text=True)
+
+    # rust new
+    if verbose: proc = subprocess.run(["rust-parallel", "-s", ":::", *processed_commands], capture_output=True, text=True)
+    else: proc = subprocess.run(["rust-parallel", "-s" , ":::", *processed_commands], capture_output=True, text=True)
+
     return proc, processed_commands
 
 def parallel_zip(command, cross=None, verbose=False, lines=False, dry_run=False, strict=False, java_memory=None,  **named_vals):
