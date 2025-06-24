@@ -250,13 +250,9 @@ def execute_command(commands, dry_run, verbose):
     #if verbose: proc = subprocess.run(["parallel", "--verbose", ":::", *processed_commands], capture_output=True, text=True)
     #else: proc = subprocess.run(["parallel", ":::", *processed_commands], capture_output=True, text=True)
 
-    # rust orig
-    #if verbose: proc = subprocess.run(["rust-parallel", "/bin/bash", "-c", ":::", *processed_commands], capture_output=True, text=True)
-    #else: proc = subprocess.run(["rust-parallel", "/bin/bash", "-c", ":::", *processed_commands], capture_output=True, text=True)
-
-    # rust new
+    # rust
     if verbose: proc = subprocess.run(["rust-parallel", "-s", ":::", *processed_commands], capture_output=True, text=True)
-    else: proc = subprocess.run(["rust-parallel", "-s" , ":::", *processed_commands], capture_output=True, text=True)
+    lse: proc = subprocess.run(["rust-parallel", "-s" , ":::", *processed_commands], capture_output=True, text=True)
 
     return proc, processed_commands
 
@@ -417,6 +413,32 @@ def parallel_zip(command, cross=None, verbose=False, lines=False, dry_run=False,
     The strict parameter is crucial for commands like grep, rga, diff, test
     that use exit codes to convey information rather than errors. With
     strict=False (default), these commands work as expected.
+
+    Advanced Examples
+    -----------------
+    # Sequential execution of single sample
+    %time ! cat E1.capture_cpg.depth.csv | awk 'NR>1 {sum += $3 - $2} END {print "Sample E1 ", "Region Length: ", NR, "Total Region Length: ", sum}'
+
+    CPU times: user 705 μs, sys: 34 μs, total: 739 μs
+    Wall time: 586 ms
+    Sample E1  Region Length:  3993934 Total Region Length:  7987866
+
+    # Parallel execution of all samples
+    samples = ['E1','E2','E3','U1','U2','U3','Z1','Z2','Z3']
+    %time parallel_zip("""cat {sample}.capture_cpg.depth.csv | awk 'NR>1 {sum += $3 - $2} END {print "Sample {sample} ", "Region Length: ", NR, "Total Region Length: ", sum}'""",
+                          cross=Cross(sample=samples), verbose=True, lines=True)
+
+    CPU times: user 2.26 ms, sys: 107 μs, total: 2.37 ms
+    Wall time: 776 ms
+    ['Sample E1  Region Length:  3993934 Total Region Length:  7987866',
+    'Sample U1  Region Length:  3993129 Total Region Length:  7986256',
+    'Sample E2  Region Length:  3994145 Total Region Length:  7988288',
+    'Sample Z3  Region Length:  3988619 Total Region Length:  7977236',
+    'Sample U2  Region Length:  3993419 Total Region Length:  7986836',
+    'Sample Z1  Region Length:  3988615 Total Region Length:  7977228',
+    'Sample E3  Region Length:  3992875 Total Region Length:  7985748',
+    'Sample Z2  Region Length:  3989592 Total Region Length:  7979182',
+    'Sample U3  Region Length:  3993753 Total Region Length:  7987504']
 
     '''
 
