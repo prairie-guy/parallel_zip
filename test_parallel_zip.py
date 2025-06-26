@@ -17,6 +17,7 @@ Test Organization:
 from ward import test, fixture, skip, each
 from parallel_zip import parallel_zip, Cross, zipper, parse_command
 import os
+import re
 import shutil
 import tempfile
 from pathlib import Path
@@ -372,7 +373,9 @@ def test_python_expressions_zipped(env=test_environment):
         "File abc.txt has length 7",
         "File defgh.txt has length 9"
     ]
-    assert result == expected
+    # Since parallel execution order is non-deterministic, compare sets instead
+    assert set(result) == set(expected)
+    assert len(result) == len(expected)
 
 
 @test("literal braces are preserved")
@@ -400,7 +403,9 @@ def test_python_expressions_string_behavior(env=test_environment):
         "[file, 5, 55]",    # len("alice")=5, "5"*2="55"
         "[file, 3, 1010]"   # len("bob")=3, "10"*2="1010"
     ]
-    assert result == expected
+    # Since parallel execution order is non-deterministic, compare sets instead
+    assert set(result) == set(expected)
+    assert len(result) == len(expected)
 
 
 @test("mixed parameter substitution and python expressions")
@@ -416,7 +421,9 @@ def test_mixed_substitution_and_expressions(env=test_environment):
         "Name: alice, Length: 5",
         "Name: bob, Length: 3"
     ]
-    assert result == expected
+    # Since parallel execution order is non-deterministic, compare sets instead
+    assert set(result) == set(expected)
+    assert len(result) == len(expected)
 
 
 # =============================================================================
@@ -454,7 +461,6 @@ def test_file_existence_checking(env=test_environment):
     assert any("small.txt exists" in line for line in result)
     assert any("nonexistent.txt missing" in line for line in result)
 
-
 @test("cross product with real file operations")
 def test_cross_product_file_operations(env=test_environment):
     """Test cross product with actual file operations"""
@@ -470,7 +476,6 @@ def test_cross_product_file_operations(env=test_environment):
     # Results should contain actual grep counts
     for line in result:
         assert any(char.isdigit() for char in line), f"Expected digit in: {line}"
-
 
 @test("commands with special shell characters")
 def test_shell_special_characters(env=test_environment):
@@ -607,7 +612,9 @@ def test_docstring_grep_verbose_lines(env=test_environment):
         'mat C.mat C.mat'
     ]
 
-    assert result == expected
+    # Since parallel execution order is non-deterministic, compare sets instead
+    assert set(result) == set(expected)
+    assert len(result) == len(expected)
 
 
 @test("docstring example: strict mode failure dry run")
@@ -734,7 +741,6 @@ def test_cross_helper():
 # =============================================================================
 # COMPREHENSIVE INTEGRATION TESTS
 # =============================================================================
-
 @test("complex real-world workflow simulation")
 def test_complex_workflow(env=test_environment):
     """Test a complex workflow similar to real usage"""
@@ -757,9 +763,17 @@ def test_complex_workflow(env=test_environment):
     processed_lines = [line for line in result if "Processed" in line]
     assert len(processed_lines) == 4  # Should have 4 "Processed" lines
 
-    for line in processed_lines:
-        assert any(tool in line for tool in ["analyzer", "validator"])
-        assert any(fname in line for fname in ["small.txt", "data.csv"])
+    # Use set comparison for tool and file combinations since order is non-deterministic
+    expected_combinations = {
+        "Processed small.txt with analyzer",
+        "Processed small.txt with validator",
+        "Processed data.csv with analyzer",
+        "Processed data.csv with validator"
+    }
+
+    # The lines are already the full content - no quotes to strip
+    actual_combinations = set(processed_lines)
+    assert actual_combinations == expected_combinations
 
 
 @test("python expressions with various data types")
@@ -774,7 +788,9 @@ def test_python_expressions_data_types(env=test_environment):
         "String: hello, Length: 5, Upper: HELLO",
         "String: world, Length: 5, Upper: WORLD"
     ]
-    assert result == expected
+    # Since parallel execution order is non-deterministic, compare sets instead
+    assert set(result) == set(expected)
+    assert len(result) == len(expected)
 
 
 @test("comprehensive output format testing")
