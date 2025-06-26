@@ -261,20 +261,34 @@ def execute_command(commands, dry_run, verbose):
 def parallel_zip(command, cross=None, verbose=False, lines=False, dry_run=False, strict=False, java_memory=None,  **named_vals):
     '''Execute shell commands in parallel with parameter substitution.
 
-    Transform command templates into multiple commands by substituting parameters,
-    then execute them in parallel using GNU parallel. Perfect for batch processing,
-    parameter sweeps, and avoiding nested loops in data pipelines.
+    Transform command templates into multiple commands by substituting
+    parameters, then executing them in parallel using GNU parallel.
+    Perfect for batch processing, parameter sweeps, and avoiding nested
+    loops in data pipelines.
+
+    The command template supports multiple shell commands, one per line,
+    enabling mini-scripting capabilities. Each complete command line is
+    executed in parallel. However, tools that use multi-line syntax
+    (like AWK and sed) must be written as single command lines, using
+    semicolons (;) instead of newlines to separate their internal statements.
 
     Parameters
     ----------
+
     command : str
-        Command template with {parameter} placeholders. Multi-line commands are
-        automatically joined with &&. Python expressions in {expr} are evaluated.
-        Use {{text}} for literal braces (e.g., awk '{{print $1}}').
+        Command template string. Multi-line commands joined each joined with  &&.
+
+        {name} placeholders resolution:
+        1. {argument} - replaced by function arguments if parameter exists
+        2. {expression} - if not a parameter, evaluated as a python expression
+        3. {statment} inside quotes - passed through as-is (e.g., awk '{print $1}')
+        4. {{text}} - literal braces delimited outside of quotes
 
     cross : dict, list of dicts, or Cross() result, optional
         Parameters for cross-product expansion. Every combination is generated.
-        Example: cross=[{"mode": ["fast", "slow"]}, {"size": [1, 2]}]
+
+        ★ cross=Cross(mode=["fast", "slow"], size=[1, 2])  # Recommended
+          cross=[{"mode": ["fast", "slow"]}, {"size": [1, 2]}]
 
     verbose : bool, default False
         If True, return command output. Otherwise, run silently.
