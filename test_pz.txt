@@ -1,0 +1,62 @@
+──────────────────────────────────────────────────────────────────────────────────────── Ward 0.68.0b0 | CPython 3.12.11 ────────────────────────────────────────────────────────────────────────────────────────
+Found 24 tests and 1 fixture in 0.02 seconds.
+
+ PASS  test_pz:45 pz executes simple echo command                                                                                                                                                              4%
+ PASS  test_pz:52 pz handles multiple line output                                                                                                                                                              8%
+ PASS  test_pz:60 awk field extraction and NF usage                                                                                                                                                           12%
+ PASS  test_pz:78 awk NF and last field extraction                                                                                                                                                            17%
+ FAIL  test_pz:96 awk pattern matching with regex                                                                                                                                                             21%
+ PASS  test_pz:111 awk negated pattern matching                                                                                                                                                               25%
+ PASS  test_pz:131 awk gsub global substitution                                                                                                                                                               29%
+ PASS  test_pz:151 awk sub single substitution                                                                                                                                                                33%
+ PASS  test_pz:173 awk length function                                                                                                                                                                        38%
+ PASS  test_pz:193 awk substr function                                                                                                                                                                        42%
+ PASS  test_pz:211 awk mathematical calculations                                                                                                                                                              46%
+ PASS  test_pz:234 awk conditional mathematical operations                                                                                                                                                    50%
+ PASS  test_pz:260 awk for loop and string manipulation                                                                                                                                                       54%
+ PASS  test_pz:278 awk BEGIN and END blocks with counters                                                                                                                                                     58%
+ PASS  test_pz:301 awk case conversion functions                                                                                                                                                              62%
+ PASS  test_pz:320 awk split function with array processing                                                                                                                                                   67%
+ PASS  test_pz:339 awk field-specific pattern matching                                                                                                                                                        71%
+ PASS  test_pz:357 awk POSIX word boundary workaround                                                                                                                                                         75%
+ PASS  test_pz:379 awk string comparison and conditionals                                                                                                                                                     79%
+ PASS  test_pz:401 awk printf formatting                                                                                                                                                                      83%
+ SKIP  test_pz:424 gawk word boundaries                                                                                                                                                                       88%
+ SKIP  test_pz:439 gawk gensub with backreferences                                                                                                                                                            92%
+ SKIP  test_pz:452 gawk RT variable for record separator                                                                                                                                                      96%
+ SKIP  test_pz:467 gawk FPAT for field parsing                                                                                                                                                               100%
+                                                                                                                                                                                                                 
+──────────────────────────────────────────────────────────────────────────────────────── awk pattern matching with regex ────────────────────────────────────────────────────────────────────────────────────────
+                                                                                                                                                                                                                 
+  Failed at test_pz.py:102 - Expected 2 matching lines, got 3                                                                                                                                                    
+                                                                                                                                                                                                                 
+       96 @test("awk pattern matching with regex")                                                                                                                                                               
+       97 def test_awk_pattern_matching(env=clean_env):                                                                                                                                                          
+       98     """Test AWK pattern matching with regular expressions"""                                                                                                                                           
+       99     # Match lines containing 'the'                                                                                                                                                                     
+      100     result = pz("printf 'the quick brown\\nfox jumps over\\nthe lazy dog\\nanother line\\n' | awk '/the/'")                                                                                            
+      101                                                                                                                                                                                                        
+    ❱ 102     assert len(result) == 2, f"Expected 2 matching lines, got {len(result)}"                                                                                                                           
+      103     assert "the quick brown" in result, "Should match first line with 'the'"                                                                                                                           
+      104     assert "the lazy dog" in result, "Should match third line with 'the'"                                                                                                                              
+      105                                                                                                                                                                                                        
+      106     # Verify no false matches                                                                                                                                                                          
+      107     for line in result:                                                                                                                                                                                
+      108         assert "the" in line, f"Line should contain 'the': {line}"                                                                                                                                     
+      109                                                                                                                                                                                                        
+                                                                                                                                                                                                                 
+  ╭─ Difference (LHS vs RHS) ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+  │                                                                                                                                                                                                             │
+  │ 3                                                                                                                                                                                                           │
+  │ 2                                                                                                                                                                                                           │
+  │                                                                                                                                                                                                             │
+  ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+                                                                                                                                                                                                                 
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+╭──────────── Results ─────────────╮
+│  24  Tests Encountered           │
+│  19  Passes             (79.2%)  │
+│   1  Failures           (4.2%)   │
+│   4  Skips              (16.7%)  │
+╰──────────────────────────────────╯
+──────────────────────────────────────────────────────────────────────────────────────────── FAILED in 2.44 seconds ─────────────────────────────────────────────────────────────────────────────────────────────

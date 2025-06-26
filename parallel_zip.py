@@ -1,5 +1,8 @@
 import itertools, subprocess, re, inspect, os
 
+#ENGINE='rust'
+ENGINE='gnu'
+
 def Cross(**kwargs):
     """Create a cross-product parameter structure for zipper and parallel_zip.
 
@@ -246,13 +249,12 @@ def execute_command(commands, dry_run, verbose):
 
     if dry_run: return [], processed_commands
 
-    # gnu
-    #if verbose: proc = subprocess.run(["parallel", "--verbose", ":::", *processed_commands], capture_output=True, text=True)
-    #else: proc = subprocess.run(["parallel", ":::", *processed_commands], capture_output=True, text=True)
-
-    # rust
-    if verbose: proc = subprocess.run(["rust-parallel", "-s", ":::", *processed_commands], capture_output=True, text=True)
-    lse: proc = subprocess.run(["rust-parallel", "-s" , ":::", *processed_commands], capture_output=True, text=True)
+    if ENGINE == 'gnu':
+        if verbose: proc = subprocess.run(["parallel", "--verbose", ":::", *processed_commands], capture_output=True, text=True)
+        else: proc = subprocess.run(["parallel", ":::", *processed_commands], capture_output=True, text=True)
+    elif ENGINE == 'rust':
+        proc = subprocess.run(["rust-parallel", "-s", ":::", *processed_commands], capture_output=True, text=True)
+    else: return 'Neither `gnu` or `rust` specified as ENGINE'
 
     return proc, processed_commands
 
@@ -496,7 +498,4 @@ def pz(command, lines=True, strict=False):
    Returns:
        list or str: Command output as list of lines, or string if lines=False
    """
-   output = parallel_zip(command, verbose=True, strict=strict)
-   if lines and output:
-       return output.splitlines()
-   return output
+   return parallel_zip(command, verbose=True, lines=lines, strict=strict)
