@@ -1,0 +1,4 @@
+product_1 electronics 299.99 in_stock
+product_2 books 19.95 out_of_stock
+product_3 electronics 149.50 in_stock
+product_4 clothing 79.99 in_stock

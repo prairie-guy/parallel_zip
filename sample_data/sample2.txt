@@ -1,0 +1,4 @@
+order_1001 2024-01-15 customer_a 450.00
+order_1002 2024-01-15 customer_b 125.75
+order_1003 2024-01-16 customer_c 299.99
+order_1004 2024-01-16 customer_a 89.50

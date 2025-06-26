@@ -1,0 +1,5 @@
+2024-01-15 09:00:01 INFO User login successful
+2024-01-15 09:00:15 WARNING Database connection slow  
+2024-01-15 09:00:32 ERROR File not found: config.xml
+2024-01-15 09:01:05 INFO Backup process started
+2024-01-15 09:01:45 INFO Backup process completed
