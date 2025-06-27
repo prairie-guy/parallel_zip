@@ -426,27 +426,6 @@ parallel_zip("""echo 'Processing {file} with {tool} at {quality} quality'""",
 # Returns: 8 combinations (2×2×2)
 ```
 
-#### Mixed Zipped and Cross Parameters
-```python
-# Combine zipped parameters with cross products
-parallel_zip("""echo 'File pair: {input}->{output}, using {method} with {setting}'""",
-    input=["data1.txt", "data2.txt"],           # Zipped
-    output=["result1.txt", "result2.txt"],      # Zipped  
-    cross=Cross(
-        method=["copy", "transform"],            # Cross
-        setting=["default", "optimized"]        # Cross
-    ),
-    dry_run=True)
-# Returns:
-["echo 'File pair: data1.txt->result1.txt, using copy with default'",
- "echo 'File pair: data1.txt->result1.txt, using copy with optimized'",
- "echo 'File pair: data1.txt->result1.txt, using transform with default'", 
- "echo 'File pair: data1.txt->result1.txt, using transform with optimized'",
- "echo 'File pair: data2.txt->result2.txt, using copy with default'",
- "echo 'File pair: data2.txt->result2.txt, using copy with optimized'",
- "echo 'File pair: data2.txt->result2.txt, using transform with default'",
- "echo 'File pair: data2.txt->result2.txt, using transform with optimized'"]
-```
 
 ### The `pz()` Function - Quick Shell Power
 
