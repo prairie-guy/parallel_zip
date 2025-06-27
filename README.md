@@ -5,7 +5,7 @@
 
 ## See It In Action
 
-**Before** - Python script depending upon  Juptyer magic `!` command or else  subprocess() for native Python
+**Before** - Python script depending upon  Juptyer magic `!` command or else  `subprocess` function for native Python
 ``` python
 %%time
 
@@ -22,7 +22,7 @@ for in_path, out_path in zip(in_paths, out_paths):
         bgzip -@ {nc} -c > {fname(out_path,sample,'tsv.gz')}
 ```
 
-**After** -`parallel_zip`` using native shell code, portable to Jupyter or Python and with parallelism built-in for speed 
+**After** - `parallel_zip` using native shell code, portable to Jupyter or Python, with parallelism built-in for speed 
 ``` python
 %%time
 from parallel_zip import parallel_zip, Cross
