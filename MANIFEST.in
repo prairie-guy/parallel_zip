@@ -1,4 +1,18 @@
 include README.md
-include parallel_zip_test.sh
-include pz_test.sh
+include LICENSE
+include pyproject.toml
+include setup.py
+include conftest.py
 include parallel_zip.py
+
+# Test files
+include test_*.py
+include *_test.sh
+
+# Sample data for examples and testing
+recursive-include sample_data *.txt *.csv
+
+# Exclude unnecessary files
+global-exclude *.pyc
+global-exclude __pycache__
+global-exclude .DS_Store
