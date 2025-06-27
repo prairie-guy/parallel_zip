@@ -543,7 +543,7 @@ parallel_zip("""wc -l sample_data/{file}""",
 
 ## Real-World Workflows
 
-Move beyond toy examples to see how `parallel_zip` handles real data processing tasks.
+Move beyond basic examples to see how `parallel_zip` handles more compplex processing tasks.
 
 #### Batch File Operations
 ```python
@@ -596,9 +596,10 @@ pz("""awk -F',' 'NR>1 {sum[$4] += $3; count[$4]++} END {for(cat in sum) printf "
 #### Log File Analysis
 ```python
 # Analyze server logs by time patterns
-pz("""awk '{print $2}' sample_data/server_logs.txt | sort | uniq -c""")
+logs = pz("""awk '{print $2}' sample_data/server_logs.txt | sort | uniq -c""")
+[l.strip() for l in logs]
 # Returns:
-['      1 09:00:01', '      1 09:00:15', '      1 09:00:32', '      1 09:01:05', '      1 09:01:45']
+['1 09:00:01', '1 09:00:15', '1 09:00:32', '1 09:01:05', '1 09:01:45']
 
 # Extract errors with context
 pz("""awk '/ERROR/ {print "ERROR at", $2 ":", substr($0, index($0,$4))}' sample_data/server_logs.txt""")
@@ -656,28 +657,6 @@ echo "Contains 'data': $(grep -c data sample_data/{file} || echo 0)"
     verbose=True, lines=True)
 ```
 
-#### Data Validation and Processing
-```python
-# Check file properties before processing
-parallel_zip("""echo 'Checking {file}' && test -f sample_data/{file} && echo 'Size:' && wc -c sample_data/{file}""",
-    file=["data1.txt", "data2.txt"],
-    verbose=True, lines=True)
-
-# Conditional processing based on file size
-parallel_zip("""
-size=$(wc -c < sample_data/{file})
-echo "File {file}: $size bytes"
-if [ $size -gt 100 ]; then
-    echo "Large file - showing summary"
-    head -2 sample_data/{file}
-else
-    echo "Small file - showing all"
-    cat sample_data/{file}
-fi
-""",
-    file=["data1.txt", "data3.txt"],
-    verbose=True, lines=True)
-```
 
 #### Performance and Quality Control
 ```python
