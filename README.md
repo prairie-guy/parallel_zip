@@ -505,18 +505,6 @@ result_string = pz("""cat sample_data/data1.txt""", lines=False)
 # Returns: 'Sample data line one\nThis is line two\nFinal line three'
 ```
 
-#### When to Use `pz()` vs `parallel_zip()`
-```python
-# Use pz() for simple, one-off commands
-file_count = pz("""ls sample_data | wc -l""")
-disk_usage = pz("""du -sh sample_data""")
-current_user = pz("""whoami""")
-
-# Use parallel_zip() for parameter substitution and parallelization
-parallel_zip("""wc -l sample_data/{file}""", 
-    file=["data1.txt", "data2.txt", "data3.txt"])
-```
-
 #### Advanced Text Processing
 ```python
 # CSV analysis with AWK
@@ -532,6 +520,18 @@ pz("""awk '/ERROR/ {print "ERROR at", $2 ":", substr($0, index($0,$4))}' sample_
 pz("""awk '{print NF, $0}' sample_data/sample2.txt""")
 # Returns:
 ['4 order_1001 2024-01-15 customer_a 450.00', '4 order_1002 2024-01-15 customer_b 125.75', '4 order_1003 2024-01-16 customer_c 299.99', '4 order_1004 2024-01-16 customer_a 89.50']
+```
+
+#### When to Use `pz()` vs `parallel_zip()`
+```python
+# Use pz() for simple, one-off commands
+file_count = pz("""ls sample_data | wc -l""")
+disk_usage = pz("""du -sh sample_data""")
+current_user = pz("""whoami""")
+
+# Use parallel_zip() for parameter substitution and parallelization
+parallel_zip("""wc -l sample_data/{file}""", 
+    file=["data1.txt", "data2.txt", "data3.txt"])
 ```
 
 **Key Points:**
