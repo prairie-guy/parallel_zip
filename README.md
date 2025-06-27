@@ -332,7 +332,7 @@ parallel_zip("echo 'Processing {file} with {tool} using {option}'",
 #### Cross Products with Zipped Parameters
 ```python
 # Zipped parameters stay together, cross parameters expand
-parallel_zip("echo 'File {input} -> {output}, method: {method}, quality: {quality}'",
+parallel_zip("""echo 'File {input} -> {output}, method: {method}, quality: {quality}'""",
     input=["data1.txt", "data2.txt"],           # Zipped together
     output=["result1.txt", "result2.txt"],      # Zipped together  
     cross=Cross(
@@ -400,8 +400,8 @@ pz("awk '{print $1, $3}' sample_data/sample1.txt")
 ['product_1 299.99', 'product_2 19.95', 'product_3 149.50', 'product_4 79.99']
 
 # Count and sum - use single quotes to protect $ from shell expansion
-pz("awk '{sum += $3; count++} END {print \"Total:\", sum, \"Average:\", sum/count}' sample_data/sample1.txt")
-# Returns: ['Total: 549.43 Average: 137.357']
+pz("""awk '{sum += $3; count++} END {print "Total items:", count, "Sum:", sum}' sample_data/sample1.txt""")
+# Returns: ['Total items: 4 Sum: 549.43']
 
 # Pattern matching with AWK
 pz("awk '/product_[13]/ {print $2, $4}' sample_data/sample1.txt")
@@ -467,8 +467,8 @@ pz("awk -F',' 'NR>1 {print $2, $3}' sample_data/data.csv")
 ['apple 3.5', 'banana 2.7', 'carrot 1.8', 'cherry 4.2', 'potato 2.1']
 
 # Log file analysis
-pz("awk '/ERROR/ {print $1, $2, $4}' sample_data/server_logs.txt")
-# Returns: ['2024-01-15 09:00:32 File']
+pz("""awk '/ERROR/ {print "ERROR at", $2 ":", substr($0, index($0,$4))}' sample_data/server_logs.txt""")
+# Returns: ['ERROR at 09:00:32: File not found: config.xml']
 
 # Field counting and statistics
 pz("awk '{print NF, $0}' sample_data/sample2.txt")
@@ -525,7 +525,7 @@ parallel_zip("echo 'File {file}:' && grep -n '{pattern}' sample_data/{file} || e
 #### Data Extraction and Transformation
 ```python
 # Extract and reformat CSV data
-pz("awk -F',' 'NR>1 {printf \"%-10s %8.2f %s\\n\", $2, $3, $4}' sample_data/data.csv")
+pz("""awk -F',' 'NR>1 {printf "%-10s %8.2f %s\\n", $2, $3, $4}' sample_data/data.csv""")
 # Returns:
 ['apple          3.50 fruit',
  'banana         2.70 fruit', 
@@ -534,7 +534,7 @@ pz("awk -F',' 'NR>1 {printf \"%-10s %8.2f %s\\n\", $2, $3, $4}' sample_data/data
  'potato         2.10 vegetable']
 
 # Calculate statistics across categories
-pz("awk -F',' 'NR>1 {sum[$4] += $3; count[$4]++} END {for(cat in sum) printf \"%s: avg=%.2f (n=%d)\\n\", cat, sum[cat]/count[cat], count[cat]}' sample_data/data.csv")
+pz("""awk -F',' 'NR>1 {sum[$4] += $3; count[$4]++} END {for(cat in sum) printf "%s: avg=%.2f (n=%d)\\n", cat, sum[cat]/count[cat], count[cat]}' sample_data/data.csv""")
 # Returns:
 ['vegetable: avg=1.95 (n=2)', 'fruit: avg=3.47 (n=3)']
 ```
@@ -547,11 +547,11 @@ pz("awk '{print $2}' sample_data/server_logs.txt | sort | uniq -c")
 ['      1 09:00:01', '      1 09:00:15', '      1 09:00:32', '      1 09:01:05', '      1 09:01:45']
 
 # Extract errors with context
-pz("awk '/ERROR/ {print \"ERROR at\", $2 \":\", substr($0, index($0,$4))}' sample_data/server_logs.txt")
+pz("""awk '/ERROR/ {print "ERROR at", $2 ":", substr($0, index($0,$4))}' sample_data/server_logs.txt""")
 # Returns: ['ERROR at 09:00:32: File not found: config.xml']
 
 # Generate summary report with single-line AWK
-pz("awk '{level = $3; count[level]++; if (level == \"ERROR\") errors[NR] = $0} END {print \"=== LOG SUMMARY ===\"; for (l in count) print l \": \" count[l]; print \"\\n=== ERROR DETAILS ===\"; for (e in errors) print errors[e]}' sample_data/server_logs.txt")
+pz("""awk '{level = $3; count[level]++; if (level == "ERROR") errors[NR] = $0} END {print "=== LOG SUMMARY ==="; for (l in count) print l ": " count[l]; print "\\n=== ERROR DETAILS ==="; for (e in errors) print errors[e]}' sample_data/server_logs.txt""")
 # Returns:
 ['=== LOG SUMMARY ===',
  'WARNING: 1',
@@ -607,7 +607,7 @@ echo "Contains 'data': $(grep -c data sample_data/{file} || echo 0)"
 #### Data Validation and Processing
 ```python
 # Check file properties before processing
-parallel_zip("echo 'Checking {file}' && test -f sample_data/{file} && echo 'Size:' && wc -c sample_data/{file}",
+parallel_zip("""echo 'Checking {file}' && test -f sample_data/{file} && echo 'Size:' && wc -c sample_data/{file}""",
     file=["data1.txt", "data2.txt"],
     verbose=True, lines=True)
 
@@ -630,7 +630,7 @@ fi
 #### Performance and Quality Control
 ```python
 # Validate data quality across files
-parallel_zip("echo 'Quality check for {file}:' && awk 'END {print \"Lines:\", NR, \"Fields per line:\", NF}' sample_data/{file}",
+parallel_zip("""echo 'Quality check for {file}:' && awk 'END {print "Lines:", NR, "Fields per line:", NF}' sample_data/{file}""",
     file=["data.csv", "sample1.txt", "sample2.txt"],
     verbose=True, lines=True)
 
@@ -856,16 +856,16 @@ Embed sophisticated Python logic directly in command templates.
 #### String and File Manipulation
 ```python
 # Advanced string operations
-parallel_zip("echo 'File: {file}, Length: {len(file)}, Extension: {file.split(\".\")[-1]}'",
+parallel_zip("""echo 'File: {file}, File Name Length: {len(file)}, Extension: {file.split(".")[-1]}'""",
     file=["data1.txt", "sample2.txt", "server_logs.txt"],
     verbose=True, lines=True)
 # Returns:
-['File: data1.txt, Length: 9, Extension: txt',
- 'File: sample2.txt, Length: 11, Extension: txt', 
- 'File: server_logs.txt, Length: 15, Extension: txt']
+['File: data1.txt, File Name Length: 9, Extension: txt',
+ 'File: sample2.txt, File Name Length: 11, Extension: txt', 
+ 'File: server_logs.txt, File Name Length: 15, Extension: txt']
 
 # String manipulation showcase
-parallel_zip("echo 'Original: {name}, Upper: {name.upper()}, Reversed: {name[::-1]}, First 3: {name[:3]}'",
+parallel_zip("""echo 'Original: {name}, Upper: {name.upper()}, Reversed: {name[::-1]}, First 3: {name[:3]}'""",
     name=["alice", "bob", "charlie"],
     verbose=True, lines=True)
 # Returns:
@@ -877,7 +877,7 @@ parallel_zip("echo 'Original: {name}, Upper: {name.upper()}, Reversed: {name[::-
 #### Mathematical Expressions
 ```python
 # Complex calculations
-parallel_zip("echo 'Number {num}: squared={int(num)**2}, factorial={int(num)*int(num)-1 if int(num)>1 else 1}'",
+parallel_zip("""echo 'Number {num}: squared={int(num)**2}, factorial={int(num)*int(num)-1 if int(num)>1 else 1}'""",
     num=[3, 4, 5],
     verbose=True, lines=True)
 # Returns:
@@ -893,7 +893,7 @@ import os
 import datetime
 
 user = os.environ.get('USER', 'unknown')
-parallel_zip("echo 'User {user} processing {file} at {datetime.datetime.now().strftime(\"%H:%M:%S\")}'",
+parallel_zip("""echo 'User {user} processing {file} at {datetime.datetime.now().strftime("%H:%M:%S")}'""",
     file=["data1.txt", "data2.txt"],
     user=user,
     verbose=True, lines=True)
@@ -919,7 +919,7 @@ parallel_zip("awk '{print $1, $3}' sample_data/{file}",
 #### Protecting $ in AWK and Shell
 ```python
 # CRITICAL: Use single quotes to protect $ from shell expansion
-pz("awk '{sum += $3; count++} END {print \"Total items:\", count, \"Sum:\", sum}' sample_data/sample1.txt")
+pz("""awk '{sum += $3; count++} END {print "Total items:", count, "Sum:", sum}' sample_data/sample1.txt""")
 # Returns: ['Total items: 4 Sum: 549.43']
 
 # WRONG - $ gets expanded by shell before AWK sees it:
@@ -990,7 +990,7 @@ parallel_zip("size=$(wc -c < sample_data/{file}) && echo 'File {file}: $size byt
 #### Batch Processing Strategies
 ```python
 # Process files in logical groups
-parallel_zip("echo 'Batch {batch}: processing {file}' && {processor} sample_data/{file}",
+parallel_zip("""echo 'Batch {batch}: processing {file}' && {processor} sample_data/{file}""",
     file=["data1.txt", "data2.txt", "sample1.txt", "sample2.txt"],
     batch=["text", "text", "products", "products"],
     processor=["wc -l", "wc -l", "awk '{print $1}'", "awk '{print $1}'"],
@@ -1000,10 +1000,10 @@ parallel_zip("echo 'Batch {batch}: processing {file}' && {processor} sample_data
 #### Memory and Resource Management
 ```python
 # Process large datasets with chunking
-parallel_zip("echo 'Processing chunk {chunk} of {file}' && head -{num_lines} sample_data/{file} | tail -{chunk_size}",
+parallel_zip("""echo '>> Processing chunk {chunk} of {file}' && head -{num_lines} sample_data/{file} | tail -{chunk_size}""",
     file=["data3.txt"],
     chunk=[1, 2, 3],
-    num_lines=[10, 20, 30],
+    num_lines=[5, 10, 15],
     chunk_size=10,
     verbose=True, lines=True)
 ```
