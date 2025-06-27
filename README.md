@@ -175,7 +175,7 @@ parallel_zip("""head -{num_lines} sample_data/{file}""",
 ### Your First Cross Product
 
 ```python
-from parallel_zip import Cross
+from parallel_zip import parallel_zip, Cross
 
 # Test every file with every search pattern - 6 total combinations
 parallel_zip("""grep -c '{pattern}' sample_data/{file}""",
@@ -962,6 +962,7 @@ parallel_zip("""echo 'Number {num}: squared={int(num)**2}, factorial={int(num)*i
 #### Python Environment Integration
 ```python
 # Access Python environment and modules
+from parallel_zip import paralel_zip
 import os
 import datetime
 
