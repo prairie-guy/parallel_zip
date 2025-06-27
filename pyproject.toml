@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel"]
+requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -10,9 +10,9 @@ readme = "README.md"
 requires-python = ">=3.6"
 license = {text = "GPL-3.0"}
 authors = [
-    {name = "prairie-guy"},
+    {name = "C. Bryan Daniels", email = "quendor@nandor.net"},
 ]
-keywords = ["parallel", "gnu-parallel", "bioinformatics", "command-line", "automation"]
+keywords = ["parallel", "gnu-parallel", "bioinformatics", "command-line", "automation", "shell", "batch-processing"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -30,6 +30,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Topic :: Software Development :: Libraries :: Python Modules",
     "Topic :: System :: Shells",
+    "Topic :: System :: Distributed Computing",
     "Topic :: Utilities",
 ]
 
@@ -37,6 +38,20 @@ classifiers = [
 Homepage = "https://github.com/prairie-guy/parallel_zip"
 Repository = "https://github.com/prairie-guy/parallel_zip"
 Issues = "https://github.com/prairie-guy/parallel_zip/issues"
+Documentation = "https://github.com/prairie-guy/parallel_zip#readme"
+
+[project.optional-dependencies]
+dev = [
+    "ward>=0.68.0",
+]
+test = [
+    "ward>=0.68.0",
+]
 
 [tool.setuptools]
 py-modules = ["parallel_zip"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["parallel_zip*"]
+exclude = ["test*", "sample_data*"]
