@@ -586,30 +586,30 @@ parallel_zip("""echo '{file}:' && wc -l sample_data/{file} && wc -c sample_data/
  '502 sample_data/data2.txt']
 
 # Find patterns across multiple files
-parallel_zip("""echo 'File {file}:' && grep -n '{pattern}' sample_data/{file} || echo 'No matches'""",
+parallel_zip("""echo 'File = {file}:' && grep -n '{pattern}' sample_data/{file} || echo 'No matches'""",
     file=["data1.txt", "data2.txt", "server_logs.txt"],
     cross=Cross(pattern=["line", "ERROR", "data"]),
     verbose=True, lines=True)
 # Returns:
-['File data1.txt:',
+['File = data1.txt:',
  '1:Sample data line one',
  '2:This is line two',
  '3:Final line three',
- 'File data1.txt:',
+ 'File = data1.txt:',
  'No matches',
- 'File data1.txt:',
+ 'File = data1.txt:',
  '1:Sample data line one',
- 'File data2.txt:',
+ 'File = data2.txt:',
  '5:Line 5: Processing pipeline initialized  ',
- 'File data2.txt:',
+ 'File = data2.txt:',
  'No matches',
- 'File data2.txt:',
+ 'File = data2.txt:',
  'No matches',
- 'File server_logs.txt:',
+ 'File = server_logs.txt:',
  'No matches',
- 'File server_logs.txt:',
+ 'File = server_logs.txt:',
  '3:2024-01-15 09:00:32 ERROR File not found: config.xml',
- 'File server_logs.txt:',
+ 'File = server_logs.txt:',
  'No matches']
 ```
 
@@ -657,20 +657,20 @@ pz("""awk '{level = $3; count[level]++; if (level == "ERROR") errors[NR] = $0} E
 #### Multi-File Data Processing
 ```python
 # Process different file types with appropriate tools
-parallel_zip("""echo 'Processing {file}:' && {processor} sample_data/{file}""",
+parallel_zip("""echo 'Processing = {file}:' && {processor} sample_data/{file}""",
     file=["data.csv", "numbers.txt", "server_logs.txt"],
     processor=["awk -F',' 'NR>1 {print $2, $3}'", 
                "sort -n", 
                "grep ERROR"],
     verbose=True, lines=True)
 # Returns:
-['Processing data.csv:',
+['Processing = data.csv:',
  'apple 3.5',
- 'banana 2.7', 
+ 'banana 2.7',
  'carrot 1.8',
  'cherry 4.2',
  'potato 2.1',
- 'Processing numbers.txt:',
+ 'Processing = numbers.txt:',
  '2',
  '7',
  '10',
@@ -679,7 +679,7 @@ parallel_zip("""echo 'Processing {file}:' && {processor} sample_data/{file}""",
  '29',
  '33',
  '41',
- 'Processing server_logs.txt:',
+ 'Processing = server_logs.txt:',
  '2024-01-15 09:00:32 ERROR File not found: config.xml']
 
 # Cross-reference data between files
