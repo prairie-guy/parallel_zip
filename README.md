@@ -51,7 +51,7 @@ Wall time: 41min 27s
 
 
 
-**Real output example** - See exactly what gets executed:
+**See exactly what gets executed:** with `dry_run=True` 
 ```python
 parallel_zip("""
     hisat-3n --index {ref} -1 reads/{sample}_R1.fq.gz -2 reads/{sample}_R2.fq.gz -S alignments/{sample}_{ref}.sam
