@@ -214,7 +214,7 @@ pz("wc -w sample_data/*.txt")
  ' 300 total']
 
 pz("pwd")
-# Returns: ['/home/cdaniels/stuff/parallel_zip']
+# Returns: ['/home/quendor/stuff/parallel_zip']
 ```
 
 ## Core Concepts with Real Examples
