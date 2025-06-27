@@ -442,7 +442,7 @@ pz("ls sample_data")
 
 # Get current directory
 pz("pwd")
-# Returns: ['/home/cdaniels/stuff/parallel_zip']
+# Returns: ['/home/quendor/stuff/parallel_zip']
 
 # Quick file inspection
 pz("head -3 sample_data/data2.txt")
@@ -487,7 +487,7 @@ pz("""echo 'hello world' | tr 'a-z' 'A-Z'""")
 import os
 pz("""ls -la {os.getcwd()}/sample_data | head -5""")
 # Returns:
-['total 40', 'drwxrwxr-x 2 cdaniels cdaniels 4096 Jun 26 15:37 .', 'drwxrwxr-x 8 cdaniels cdaniels 4096 Jun 26 14:54 ..', '-rw-r--r-- 1 cdaniels cdaniels   54 Jun 26 14:55 data1.txt', '-rw-r--r-- 1 cdaniels cdaniels  501 Jun 26 14:55 data2.txt']
+['total 40', 'drwxrwxr-x 2 quendor quendor 4096 Jun 26 15:37 .', 'drwxrwxr-x 8 quendor quendor 4096 Jun 26 14:54 ..', '-rw-r--r-- 1 quendor quendor   54 Jun 26 14:55 data1.txt', '-rw-r--r-- 1 quendor quendor  501 Jun 26 14:55 data2.txt']
 
 # Mathematical calculations
 pz("""echo 'Result: {2 + 3 * 4}'""")
@@ -951,8 +951,8 @@ parallel_zip("""echo 'User {user} processing {file} at {datetime.datetime.now().
     user=user,
     verbose=True, lines=True)
 # Returns:
-['User cdaniels processing data1.txt at 16:16:45',
- 'User cdaniels processing data2.txt at 16:16:45']
+['User quendor processing data1.txt at 16:16:45',
+ 'User quendor processing data2.txt at 16:16:45']
 ```
 
 ### Shell Quoting and Special Characters
