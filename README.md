@@ -1,7 +1,7 @@
 # parallel_zip
 
-**A Python wrapper for GNU parallel that transforms complex shell workflows into elegant, readable code using nearly shell syntax (no delimiter hell). Features parameter substitution, environment 
-substitution, and cross-product generation. Perfect for embedding shell scripts into Jupyter or Python. Useful for bioinformatics and data science.***
+**A Python wrapper for GNU parallel that naturally embeds complex shell code into Python Scripts or Jupyter Notebooks (no delimiter hell). Features parameter substitution, environment 
+substitution, and cross-product generation (to replace shell loops). Useful for bioinformatics and data science pipelines running third-party Unix Programs**
 
 **Author**: C. Bryan Daniels (quendor_at_nandor.net)
 
