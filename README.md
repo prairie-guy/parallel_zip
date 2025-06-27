@@ -295,6 +295,7 @@ parallel_zip("""echo 'Number {num} doubled is {int(num) * 2}'""",
 # Access Python environment
 import os
 parallel_zip("""echo 'Working in {os.getcwd()}/sample_data'""", verbose=True, lines=True)
+# Returns: ['Working in /home/quendor/stuff/parallel_zip/sample_data']
 ```
 
 #### Literal Braces with {{ }}
@@ -415,7 +416,7 @@ parallel_zip("""echo '{tool} on {file}'""",
 #### Three-Dimensional Cross Products
 ```python
 # Every combination across 3 parameter sets
-parallel_zip("""echo 'Processing {file} with {tool} at {quality} quality'""",
+parallel_zip("""echo 'Processing {file} with {tool} at {quality} quality and {mode} mode'""",
     file=["data1.txt"],
     cross=Cross(
         tool=["grep", "awk"],
@@ -424,6 +425,14 @@ parallel_zip("""echo 'Processing {file} with {tool} at {quality} quality'""",
     ),
     dry_run=True)
 # Returns: 8 combinations (2×2×2)
+["echo 'Processing data1.txt with grep at low quality and fast mode'",
+ "echo 'Processing data1.txt with grep at low quality and thorough mode'",
+ "echo 'Processing data1.txt with grep at high quality and fast mode'",
+ "echo 'Processing data1.txt with grep at high quality and thorough mode'",
+ "echo 'Processing data1.txt with awk at low quality and fast mode'",
+ "echo 'Processing data1.txt with awk at low quality and thorough mode'",
+ "echo 'Processing data1.txt with awk at high quality and fast mode'",
+ "echo 'Processing data1.txt with awk at high quality and thorough mode'"]
 ```
 
 
@@ -568,12 +577,40 @@ parallel_zip("""[ -f sample_data/{file} ] && wc -l sample_data/{file} || echo 'S
 parallel_zip("""echo '{file}:' && wc -l sample_data/{file} && wc -c sample_data/{file}""",
     file=["data1.txt", "data2.txt"],
     verbose=True, lines=True)
+# Returns:
+['data1.txt:',
+ '3 sample_data/data1.txt',
+ '55 sample_data/data1.txt',
+ 'data2.txt:',
+ '15 sample_data/data2.txt',
+ '502 sample_data/data2.txt']
 
 # Find patterns across multiple files
 parallel_zip("""echo 'File {file}:' && grep -n '{pattern}' sample_data/{file} || echo 'No matches'""",
     file=["data1.txt", "data2.txt", "server_logs.txt"],
     cross=Cross(pattern=["line", "ERROR", "data"]),
     verbose=True, lines=True)
+# Returns:
+['File data1.txt:',
+ '1:Sample data line one',
+ '2:This is line two',
+ '3:Final line three',
+ 'File data1.txt:',
+ 'No matches',
+ 'File data1.txt:',
+ '1:Sample data line one',
+ 'File data2.txt:',
+ '5:Line 5: Processing pipeline initialized  ',
+ 'File data2.txt:',
+ 'No matches',
+ 'File data2.txt:',
+ 'No matches',
+ 'File server_logs.txt:',
+ 'No matches',
+ 'File server_logs.txt:',
+ '3:2024-01-15 09:00:32 ERROR File not found: config.xml',
+ 'File server_logs.txt:',
+ 'No matches']
 ```
 
 #### Data Extraction and Transformation
@@ -655,6 +692,30 @@ echo "Contains 'data': $(grep -c data sample_data/{file} || echo 0)"
 """,
     file=["data1.txt", "data2.txt", "sample1.txt"],
     verbose=True, lines=True)
+# Returns:
+['=== Analysis of data1.txt ===',
+ '3 sample_data/data1.txt',
+ 'Top 3 lines:',
+ 'Sample data line one',
+ 'This is line two',
+ 'Final line three',
+ "Contains 'data': 1",
+ '=== Analysis of data2.txt ===',
+ '15 sample_data/data2.txt',
+ 'Top 3 lines:',
+ 'Line 1: Introduction',
+ 'Line 2: Methods overview',
+ 'Line 3: Data collection started',
+ "Contains 'data': 0",
+ '0',
+ '=== Analysis of sample1.txt ===',
+ '4 sample_data/sample1.txt',
+ 'Top 3 lines:',
+ 'product_1 electronics 299.99 in_stock',
+ 'product_2 books 19.95 out_of_stock',
+ 'product_3 electronics 149.50 in_stock',
+ "Contains 'data': 0",
+ '0']
 ```
 
 
@@ -664,6 +725,13 @@ echo "Contains 'data': $(grep -c data sample_data/{file} || echo 0)"
 parallel_zip("""echo 'Quality check for {file}:' && awk 'END {print "Lines:", NR, "Fields per line:", NF}' sample_data/{file}""",
     file=["data.csv", "sample1.txt", "sample2.txt"],
     verbose=True, lines=True)
+# Returns:
+['Quality check for data.csv:',
+ 'Lines: 6 Fields per line: 1',
+ 'Quality check for sample1.txt:',
+ 'Lines: 4 Fields per line: 4',
+ 'Quality check for sample2.txt:',
+ 'Lines: 4 Fields per line: 4']
 
 # Compare processing approaches
 parallel_zip("""echo '=== cat {file} | {filter.split(' ')[0]} | {extract.split(' ')[0]} ===' && cat sample_data/{file} | {filter} | {extract}""",
@@ -673,6 +741,37 @@ parallel_zip("""echo '=== cat {file} | {filter.split(' ')[0]} | {extract.split('
         extract=["cut -d' ' -f2", "sed 's/^[^ ]* [^ ]* //'", "awk '{print $1, $2}'"]
     ),
     verbose=True, lines=True)
+# Returns:
+['=== cat data2.txt | head | cut ===',
+ '1:',
+ '2:',
+ '3:',
+ '=== cat data2.txt | head | sed ===',
+ 'Introduction',
+ 'Methods overview',
+ 'Data collection started',
+ '=== cat data2.txt | head | awk ===',
+ 'Line 1:',
+ 'Line 2:',
+ 'Line 3:',
+ '=== cat data2.txt | tail | cut ===',
+ '14:',
+ '15:',
+ '=== cat data2.txt | tail | sed ===',
+ 'Documentation updated',
+ 'Analysis finished successfully',
+ '=== cat data2.txt | tail | awk ===',
+ 'Line 14:',
+ 'Line 15:',
+ '=== cat data2.txt | grep | cut ===',
+ '3:',
+ '13:',
+ '=== cat data2.txt | grep | sed ===',
+ 'Data collection started',
+ 'Report generation started',
+ '=== cat data2.txt | grep | awk ===',
+ 'Line 3:',
+ 'Line 13:']
 ```
 
 **Key Workflow Principles:**
@@ -877,7 +976,12 @@ echo "=== Completed {file} ==="
     file=["data1.txt", "data2.txt"],
     verbose=True, lines=True)
 # Returns:
-['=== Processing data1.txt ===', '2 temp_data1.txt', '=== Completed data1.txt ===', '=== Processing data2.txt ===', '14 temp_data2.txt', '=== Completed data2.txt ===']
+['=== Processing data1.txt ===',
+ '3 temp_data1.txt',
+ '=== Completed data1.txt ===',
+ '=== Processing data2.txt ===',
+ '15 temp_data2.txt',
+ '=== Completed data2.txt ===']
 ```
 
 ### Advanced Python Expressions
@@ -965,6 +1069,19 @@ parallel_zip("""grep -E '{pattern}' sample_data/{file} || echo 'No matches'""",
     file=["data1.txt", "server_logs.txt"],
     cross=Cross(pattern=["^[A-Z]", "[0-9]+", "line$"]),
     verbose=True, lines=True)
+# Returns:
+['Sample data line one',
+ 'This is line two',
+ 'Final line three',
+ 'No matches',
+ 'No matches',
+ 'No matches',
+ '2024-01-15 09:00:01 INFO User login successful',
+ '2024-01-15 09:00:15 WARNING Database connection slow  ',
+ '2024-01-15 09:00:32 ERROR File not found: config.xml',
+ '2024-01-15 09:01:05 INFO Backup process started',
+ '2024-01-15 09:01:45 INFO Backup process completed',
+ 'No matches']
 ```
 
 **Advanced Best Practices:**
