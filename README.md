@@ -38,6 +38,7 @@ parallel_zip(
         cross=Cross(sample=['E1', 'E2', 'E3', 'Z1', 'Z2', 'Z3', 'U1', 'U2', 'U3']))
 ```
 CPU times: user 103 ms, sys: 12.4 ms, total: 116 ms
+
 Wall time: 41min 27s
 
 **Real output example** - See exactly what gets executed:
