@@ -5,29 +5,37 @@
 
 ## See It In Action
 
-**Before** - Complex nested loops and string formatting:
-```python
-# The old way - error-prone, hard to read and very slow
-import subprocess
-samples = ['treated', 'control'] 
-references = ['hg38', 'mm10']
-for sample in samples:
-    for ref in references:
-        r1 = f'{sample}_R1.fq.gz'
-        r2 = f'{sample}_R2.fq.gz'
-        cmd = f'hisat-3n --index {ref} -1 reads/{r1} -2 reads/{r2} -S alignments/{sample}_{ref}.sam'
-        subprocess.run(cmd, shell=True)
+**Before** - Python script depends upon  Juptyer magic `!` command or else requiring subprocess() for native Python
+``` python
+%%time
+
+in_paths = ['dedup_MT', 'dedup_2', 'dedup_human']
+out_paths = ['conv_unconv3n_MT', 'conv_unconv3n_2', 'conv_unconv3n_human']
+samples = ['E1', 'E2', 'E3', 'Z1', 'Z2', 'Z3', 'U1', 'U2', 'U3']
+threads = 6
+
+for in_path, out_path in zip(in_paths, out_paths):
+    ref = str(in_path).split('_')[-1]
+    for sample in samples:
+        !samtools view -e "rlen<100000" -h {fname(in_path,sample,'bam')} |\
+        hisat-3n-table -p {threads}--unique-only --alignments - --ref {get_ref(ref,'fa')} --output-name /dev/stdout --base-change C,T|\
+        bgzip -@ {nc} -c > {fname(out_path,sample,'tsv.gz')}
 ```
 
-**After** - Clean, readable, and parallel by default:
-```python
+**After** - parallel_zip with nearly native shell code portable to Jupyter or Python,  with arallelism built-in. Much faster... 
+``` python
+%%time
 from parallel_zip import parallel_zip, Cross
 
-# The new way - easy to understand and very fast
-parallel_zip("""
-    hisat-3n --index {ref} -1 reads/{sample}_R1.fq.gz -2 reads/{sample}_R2.fq.gz -S alignments/{sample}_{ref}.sam
-""",
-    cross=Cross(sample=['treated', 'control'], ref=['hg38', 'mm10']))
+parallel_zip(
+    """
+    samtools view -e "rlen<100000" -h {in_path}/{sample}.bam | \
+    hisat-3n-table -p 6 --unique-only --alignments - --ref {get_ref(ref,'fa')} --output-name /dev/stdout --base-change C,T | \
+    bgzip -@ 6 -c > {out_path}/{sample}.tsv.gz
+    """, 
+        in_paths = ['dedup_MT', 'dedup_2', 'dedup_human']  , 
+        out_paths= ['conv_unconv3n_MT', 'conv_unconv3n_2', 'conv_unconv3n_human']
+        cross=Cross(sample=['E1', 'E2', 'E3', 'Z1', 'Z2', 'Z3', 'U1', 'U2', 'U3']))
 ```
 
 **Real output example** - See exactly what gets executed:
