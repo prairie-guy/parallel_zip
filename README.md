@@ -2,6 +2,8 @@
 
 **A Python wrapper for GNU parallel that provides an elegant interface for running shell commands with parameter substitution and cross-product functionality.**
 
+**Author**: C. Bryan Daniels (quendor_at_nandor.net)
+
 ## See It In Action
 
 **Before** - Complex nested loops and string formatting:
@@ -55,7 +57,7 @@ pz("ls -la *.txt")
 pz("head -3 data.csv")
 # Returns: ['id,name,value', '1,apple,3.5', '2,banana,2.7']
 
-# Relatively complex shell command
+# Complex shell command with natural syntax (no delimiting hell)
 pz("""ls -l {os.getcwd()} | cut -f1 -d' ' | sed s/--// | sed s/^-// | awk '$1 ~ /x/ {split($1, parts, "-"); print parts[1]}' """)
 # Returns: ['drwxrwxr', 'drwxrwxr', 'drwxrwxr', 'drwxrwxr']
 ```
@@ -134,7 +136,7 @@ git clone https://github.com/prairie-guy/parallel_zip.git
 cp parallel_zip/parallel_zip.py /path/to/your/project/
 ```
 
-**Alternative: Install with pip**
+**Optional: Install Locally with pip**
 ```bash
 git clone https://github.com/prairie-guy/parallel_zip.git
 cd parallel_zip
@@ -147,7 +149,7 @@ pip install .
 from parallel_zip import parallel_zip
 
 # Process multiple files in parallel
-parallel_zip("wc -l sample_data/{file}", 
+parallel_zip("""wc -l sample_data/{file}""", 
     file=["data1.txt", "data2.txt", "data3.txt"],
     verbose=True, lines=True)
 # Returns:
@@ -156,7 +158,7 @@ parallel_zip("wc -l sample_data/{file}",
  '45 sample_data/data3.txt']
 
 # Same files, different parameters - extract different numbers of lines
-parallel_zip("head -{num_lines} sample_data/{file}",
+parallel_zip("""head -{num_lines} sample_data/{file}""",
     file=["data1.txt", "data2.txt"],
     num_lines=[2, 5],
     verbose=True, lines=True)
@@ -176,7 +178,7 @@ parallel_zip("head -{num_lines} sample_data/{file}",
 from parallel_zip import Cross
 
 # Test every file with every search pattern - 6 total combinations
-parallel_zip("grep -c '{pattern}' sample_data/{file}",
+parallel_zip("""grep -c '{pattern}' sample_data/{file}""",
     file=["data1.txt", "data2.txt"],
     cross=Cross(pattern=["line", "data", "Line"]),
     verbose=True, lines=True)
@@ -221,14 +223,16 @@ pz("pwd")
 
 The heart of `parallel_zip` is intuitive parameter substitution using `{parameter}` syntax in command templates.
 
+**Warning**: The following parameter names are reserved and should not be used as named parameters to `parallel_zip`: `command`, `cross`, `verbose`, `lines`, `dry_run`, `strict`, `java_memory`. This is a known issue that will be fixed in a future version.
+
 #### Basic Substitution
 ```python
 # Single parameter
-parallel_zip("cat sample_data/{filename}", filename="data1.txt", verbose=True, lines=True)
+parallel_zip("""cat sample_data/{filename}""", filename="data1.txt", verbose=True, lines=True)
 # Returns: ['Sample data line one', 'This is line two', 'Final line three']
 
 # Multiple parameters
-parallel_zip("head -{num} sample_data/{file} | tail -{last}",
+parallel_zip("""head -{num} sample_data/{file} | tail -{last}""",
     file="data2.txt", num=10, last=3, verbose=True, lines=True)
 # Returns: 
 ['Line 8: Statistical analysis begun',
@@ -239,7 +243,7 @@ parallel_zip("head -{num} sample_data/{file} | tail -{last}",
 #### List Parameters - Zipped Together
 ```python
 # Parameters are zipped together (like Python's zip function)
-parallel_zip("echo 'File {file} has {line_count} lines'",
+parallel_zip("""echo 'File {file} has {line_count} lines'""",
     file=["data1.txt", "data2.txt", "data3.txt"],
     line_count=[3, 15, 42], verbose=True, lines=True)
 # Returns:
@@ -262,7 +266,7 @@ parallel_zip("""
 #### Broadcasting - Single Values Expand
 ```python
 # Single values automatically broadcast to match list length
-parallel_zip("grep '{pattern}' sample_data/{file}",
+parallel_zip("""grep '{pattern}' sample_data/{file}""",
     file=["data1.txt", "data2.txt", "server_logs.txt"],
     pattern="line", dry_run=True)
 # Returns:
@@ -274,14 +278,14 @@ parallel_zip("grep '{pattern}' sample_data/{file}",
 #### Python Expression Evaluation
 ```python
 # Embed Python expressions directly in commands
-parallel_zip("echo 'File {file} - uppercase: {file.upper()}'",
+parallel_zip("""echo 'File {file} - uppercase: {file.upper()}'""",
     file=["data1.txt", "sample1.txt"], verbose=True, lines=True)
 # Returns:
 ['File data1.txt - uppercase: DATA1.TXT',
  'File sample1.txt - uppercase: SAMPLE1.TXT']
 
 # Mathematical operations
-parallel_zip("echo 'Number {num} doubled is {int(num) * 2}'",
+parallel_zip("""echo 'Number {num} doubled is {int(num) * 2}'""",
     num=[5, 10, 15], verbose=True, lines=True)
 # Returns:
 ['Number 5 doubled is 10',
@@ -290,8 +294,47 @@ parallel_zip("echo 'Number {num} doubled is {int(num) * 2}'",
 
 # Access Python environment
 import os
-parallel_zip("echo 'Working in {os.getcwd()}/sample_data'", verbose=True, lines=True)
+parallel_zip("""echo 'Working in {os.getcwd()}/sample_data'""", verbose=True, lines=True)
 ```
+
+#### Literal Braces with {{ }}
+
+When you need literal curly braces in your output (for JSON, shell scripts, or code generation), use `{{ }}` to prevent them from being interpreted as parameter placeholders.
+
+```python
+# Generate valid JSON with literal braces
+parallel_zip("""echo '{file}: {{"{key}": "{value}"}}' > {file}.json
+            cat {file}.json
+            rm {file}.json""",
+    file=["config", "settings", "params"],
+    key=["version", "mode", "level"],
+    value=["1.0", "production", "debug"],
+    verbose=True, lines=True)
+# Returns:
+['config: {"version": "1.0"}',
+ 'settings: {"mode": "production"}',
+ 'params: {"level": "debug"}']
+
+# Generate shell scripts with literal braces for command grouping
+parallel_zip("""echo 'if [ -f {file} ]; then {{ echo "Found {file}"; process_{action}; }}' > check_{file}.sh
+            echo '> cat' check_{file}.sh  && cat check_{file}.sh
+            rm check_{file}.sh
+            """,
+    file=["data1.txt", "data2.txt"], 
+    action=["validate", "transform"],
+    verbose=True, lines=True)
+# Returns:
+['> cat check_data1.txt.sh',
+ 'if [ -f data1.txt ]; then { echo "Found data1.txt"; process_validate; }',
+ '> cat check_data2.txt.sh',
+ 'if [ -f data2.txt ]; then { echo "Found data2.txt"; process_transform; }']
+```
+
+**Key Points:**
+- `{{` becomes `{` in the output
+- `}}` becomes `}` in the output
+- Parameters like `{file}` inside `{{ }}` are still substituted
+- Perfect for generating JSON, shell scripts, or any text that needs literal braces
 
 ### Cross Products Made Simple
 
@@ -300,7 +343,7 @@ Cross products let you run every combination of parameters automatically. Use th
 #### Basic Cross Product
 ```python
 # Run every file with every pattern - 6 total combinations
-parallel_zip("grep -c '{pattern}' sample_data/{file}",
+parallel_zip("""grep -c '{pattern}' sample_data/{file}""",
     file=["data1.txt", "data2.txt"],
     cross=Cross(pattern=["line", "data", "INFO"]),
     verbose=True, lines=True)
@@ -311,7 +354,7 @@ parallel_zip("grep -c '{pattern}' sample_data/{file}",
 #### Multiple Cross Parameters
 ```python
 # Every file × every tool × every option = 8 combinations
-parallel_zip("echo 'Processing {file} with {tool} using {option}'",
+parallel_zip("""echo 'Processing {file} with {tool} using {option}'""",
     file=["data1.txt"],
     cross=Cross(
         tool=["grep", "awk"],
@@ -355,18 +398,54 @@ parallel_zip("""echo 'File {input} -> {output}, method: {method}, quality: {qual
 ```python
 # These are equivalent - use Cross() for readability
 # Cross() format (recommended)
-parallel_zip("echo '{tool} on {file}'",
+parallel_zip("""echo '{tool} on {file}'""",
     file=["data1.txt"],
     cross=Cross(tool=["grep", "awk"]),
     verbose=True, lines=True)
 # Returns: ['grep on data1.txt', 'awk on data1.txt']
 
 # List format (also works)
-parallel_zip("echo '{tool} on {file}'", 
+parallel_zip("""echo '{tool} on {file}'""", 
     file=["data1.txt"],
     cross=[{"tool": ["grep", "awk"]}],
     verbose=True, lines=True)
 # Returns: ['grep on data1.txt', 'awk on data1.txt']
+```
+
+#### Three-Dimensional Cross Products
+```python
+# Every combination across 3 parameter sets
+parallel_zip("""echo 'Processing {file} with {tool} at {quality} quality'""",
+    file=["data1.txt"],
+    cross=Cross(
+        tool=["grep", "awk"],
+        quality=["low", "high"],
+        mode=["fast", "thorough"]
+    ),
+    dry_run=True)
+# Returns: 8 combinations (2×2×2)
+```
+
+#### Mixed Zipped and Cross Parameters
+```python
+# Combine zipped parameters with cross products
+parallel_zip("""echo 'File pair: {input}->{output}, using {method} with {setting}'""",
+    input=["data1.txt", "data2.txt"],           # Zipped
+    output=["result1.txt", "result2.txt"],      # Zipped  
+    cross=Cross(
+        method=["copy", "transform"],            # Cross
+        setting=["default", "optimized"]        # Cross
+    ),
+    dry_run=True)
+# Returns:
+["echo 'File pair: data1.txt->result1.txt, using copy with default'",
+ "echo 'File pair: data1.txt->result1.txt, using copy with optimized'",
+ "echo 'File pair: data1.txt->result1.txt, using transform with default'", 
+ "echo 'File pair: data1.txt->result1.txt, using transform with optimized'",
+ "echo 'File pair: data2.txt->result2.txt, using copy with default'",
+ "echo 'File pair: data2.txt->result2.txt, using copy with optimized'",
+ "echo 'File pair: data2.txt->result2.txt, using transform with default'",
+ "echo 'File pair: data2.txt->result2.txt, using transform with optimized'"]
 ```
 
 ### The `pz()` Function - Quick Shell Power
@@ -395,7 +474,7 @@ pz("head -3 sample_data/data2.txt")
 #### Text Processing with AWK
 ```python
 # Extract specific fields
-pz("awk '{print $1, $3}' sample_data/sample1.txt")
+pz("""awk '{print $1, $3}' sample_data/sample1.txt""")
 # Returns:
 ['product_1 299.99', 'product_2 19.95', 'product_3 149.50', 'product_4 79.99']
 
@@ -404,22 +483,22 @@ pz("""awk '{sum += $3; count++} END {print "Total items:", count, "Sum:", sum}' 
 # Returns: ['Total items: 4 Sum: 549.43']
 
 # Pattern matching with AWK
-pz("awk '/product_[13]/ {print $2, $4}' sample_data/sample1.txt")
+pz("""awk '/product_[13]/ {print $2, $4}' sample_data/sample1.txt""")
 # Returns: ['electronics in_stock', 'electronics in_stock']
 ```
 
 #### Data Analysis Pipelines
 ```python
 # Complex shell pipeline in one line
-pz("sort sample_data/numbers.txt | head -3")
+pz("""sort sample_data/numbers.txt | head -3""")
 # Returns: ['10', '18', '2']
 
 # Multiple command chaining
-pz("cat sample_data/numbers.txt | sort -n | tail -3")
+pz("""cat sample_data/numbers.txt | sort -n | tail -3""")
 # Returns: ['29', '33', '41']
 
 # String manipulation
-pz("echo 'hello world' | tr 'a-z' 'A-Z'")
+pz("""echo 'hello world' | tr 'a-z' 'A-Z'""")
 # Returns: ['HELLO WORLD']
 ```
 
@@ -427,42 +506,42 @@ pz("echo 'hello world' | tr 'a-z' 'A-Z'")
 ```python
 # Access Python environment in shell commands
 import os
-pz("ls -la {os.getcwd()}/sample_data | head -5")
+pz("""ls -la {os.getcwd()}/sample_data | head -5""")
 # Returns:
 ['total 40', 'drwxrwxr-x 2 cdaniels cdaniels 4096 Jun 26 15:37 .', 'drwxrwxr-x 8 cdaniels cdaniels 4096 Jun 26 14:54 ..', '-rw-r--r-- 1 cdaniels cdaniels   54 Jun 26 14:55 data1.txt', '-rw-r--r-- 1 cdaniels cdaniels  501 Jun 26 14:55 data2.txt']
 
 # Mathematical calculations
-pz("echo 'Result: {2 + 3 * 4}'")
+pz("""echo 'Result: {2 + 3 * 4}'""")
 # Returns: ['Result: 14']
 ```
 
 #### Output Format Control
 ```python
 # Get output as list of lines (default)
-result_lines = pz("cat sample_data/data1.txt")
+result_lines = pz("""cat sample_data/data1.txt""")
 # Returns: ['Sample data line one', 'This is line two', 'Final line three']
 
 # Get output as single string
-result_string = pz("cat sample_data/data1.txt", lines=False)
+result_string = pz("""cat sample_data/data1.txt""", lines=False)
 # Returns: 'Sample data line one\nThis is line two\nFinal line three'
 ```
 
 #### When to Use `pz()` vs `parallel_zip()`
 ```python
 # Use pz() for simple, one-off commands
-file_count = pz("ls sample_data | wc -l")
-disk_usage = pz("du -sh sample_data")
-current_user = pz("whoami")
+file_count = pz("""ls sample_data | wc -l""")
+disk_usage = pz("""du -sh sample_data""")
+current_user = pz("""whoami""")
 
 # Use parallel_zip() for parameter substitution and parallelization
-parallel_zip("wc -l sample_data/{file}", 
+parallel_zip("""wc -l sample_data/{file}""", 
     file=["data1.txt", "data2.txt", "data3.txt"])
 ```
 
 #### Advanced Text Processing
 ```python
 # CSV analysis with AWK
-pz("awk -F',' 'NR>1 {print $2, $3}' sample_data/data.csv")
+pz("""awk -F',' 'NR>1 {print $2, $3}' sample_data/data.csv""")
 # Returns:
 ['apple 3.5', 'banana 2.7', 'carrot 1.8', 'cherry 4.2', 'potato 2.1']
 
@@ -471,7 +550,7 @@ pz("""awk '/ERROR/ {print "ERROR at", $2 ":", substr($0, index($0,$4))}' sample_
 # Returns: ['ERROR at 09:00:32: File not found: config.xml']
 
 # Field counting and statistics
-pz("awk '{print NF, $0}' sample_data/sample2.txt")
+pz("""awk '{print NF, $0}' sample_data/sample2.txt""")
 # Returns:
 ['4 order_1001 2024-01-15 customer_a 450.00', '4 order_1002 2024-01-15 customer_b 125.75', '4 order_1003 2024-01-16 customer_c 299.99', '4 order_1004 2024-01-16 customer_a 89.50']
 ```
@@ -487,19 +566,17 @@ pz("awk '{print NF, $0}' sample_data/sample2.txt")
 
 Move beyond toy examples to see how `parallel_zip` handles real data processing tasks.
 
-### File Processing Patterns
-
 #### Batch File Operations
 ```python
 # Check which files exist before processing
-parallel_zip("test -f sample_data/{file} && echo '{file} exists' || echo '{file} missing'",
+parallel_zip("""test -f sample_data/{file} && echo '{file} exists' || echo '{file} missing'""",
     file=["data1.txt", "missing.txt", "data2.txt"],
     verbose=True, lines=True)
 # Returns:
 ['data1.txt exists', 'missing.txt missing', 'data2.txt exists']
 
 # Process only existing files with error handling
-parallel_zip("[ -f sample_data/{file} ] && wc -l sample_data/{file} || echo 'SKIP: {file}'",
+parallel_zip("""[ -f sample_data/{file} ] && wc -l sample_data/{file} || echo 'SKIP: {file}'""",
     file=["data1.txt", "missing.txt", "data3.txt"],
     verbose=True, lines=True)
 # Returns:
@@ -509,18 +586,16 @@ parallel_zip("[ -f sample_data/{file} ] && wc -l sample_data/{file} || echo 'SKI
 #### File Analysis and Comparison
 ```python
 # Get file statistics
-parallel_zip("echo '{file}:' && wc -l sample_data/{file} && wc -c sample_data/{file}",
+parallel_zip("""echo '{file}:' && wc -l sample_data/{file} && wc -c sample_data/{file}""",
     file=["data1.txt", "data2.txt"],
     verbose=True, lines=True)
 
 # Find patterns across multiple files
-parallel_zip("echo 'File {file}:' && grep -n '{pattern}' sample_data/{file} || echo 'No matches'",
+parallel_zip("""echo 'File {file}:' && grep -n '{pattern}' sample_data/{file} || echo 'No matches'""",
     file=["data1.txt", "data2.txt", "server_logs.txt"],
     cross=Cross(pattern=["line", "ERROR", "data"]),
     verbose=True, lines=True)
 ```
-
-### Text Processing Powerhouse
 
 #### Data Extraction and Transformation
 ```python
@@ -542,7 +617,7 @@ pz("""awk -F',' 'NR>1 {sum[$4] += $3; count[$4]++} END {for(cat in sum) printf "
 #### Log File Analysis
 ```python
 # Analyze server logs by time patterns
-pz("awk '{print $2}' sample_data/server_logs.txt | sort | uniq -c")
+pz("""awk '{print $2}' sample_data/server_logs.txt | sort | uniq -c""")
 # Returns:
 ['      1 09:00:01', '      1 09:00:15', '      1 09:00:32', '      1 09:01:05', '      1 09:01:45']
 
@@ -565,7 +640,7 @@ pz("""awk '{level = $3; count[level]++; if (level == "ERROR") errors[NR] = $0} E
 #### Multi-File Data Processing
 ```python
 # Process different file types with appropriate tools
-parallel_zip("echo 'Processing {file}:' && {processor} sample_data/{file}",
+parallel_zip("""echo 'Processing {file}:' && {processor} sample_data/{file}""",
     file=["data.csv", "numbers.txt", "server_logs.txt"],
     processor=["awk -F',' 'NR>1 {print $2, $3}'", 
                "sort -n", 
@@ -602,8 +677,6 @@ echo "Contains 'data': $(grep -c data sample_data/{file} || echo 0)"
     verbose=True, lines=True)
 ```
 
-### Advanced Workflow Patterns
-
 #### Data Validation and Processing
 ```python
 # Check file properties before processing
@@ -635,11 +708,11 @@ parallel_zip("""echo 'Quality check for {file}:' && awk 'END {print "Lines:", NR
     verbose=True, lines=True)
 
 # Compare processing approaches
-parallel_zip("echo 'Method {method} on {file}:' && time {command} sample_data/{file} | wc -l",
+parallel_zip("""echo '=== cat {file} | {filter.split(' ')[0]} | {extract.split(' ')[0]} ===' && cat sample_data/{file} | {filter} | {extract}""",
     file=["data2.txt"],
     cross=Cross(
-        method=["cat", "sort", "reverse"],
-        command=["cat", "sort", "tac"]
+        filter=["head -3", "tail -2", "grep started"],
+        extract=["cut -d' ' -f2", "sed 's/^[^ ]* [^ ]* //'", "awk '{print $1, $2}'"]
     ),
     verbose=True, lines=True)
 ```
@@ -662,7 +735,7 @@ Always preview commands before running them, especially with cross products or c
 
 ```python
 # See exactly what commands will be generated
-parallel_zip("echo 'Processing {file} with {tool}'",
+parallel_zip("""echo 'Processing {file} with {tool}'""",
     file=["data1.txt", "data2.txt"],
     cross=Cross(tool=["grep", "awk"]),
     dry_run=True)
@@ -673,7 +746,7 @@ parallel_zip("echo 'Processing {file} with {tool}'",
  "echo 'Processing data2.txt with awk'"]
 
 # Debug complex find operations
-parallel_zip("find sample_data -name '*{pattern}*' -type f",
+parallel_zip("""find sample_data -name '*{pattern}*' -type f""",
     cross=Cross(pattern=["data", "sample", "server"]),
     dry_run=True)
 # Returns:
@@ -689,7 +762,7 @@ Choose the right output format for your workflow needs.
 #### Silent Execution
 ```python
 # Run commands without capturing output (fastest)
-parallel_zip("echo 'This runs silently for {file}'",
+parallel_zip("""echo 'This runs silently for {file}'""",
     file=["data1.txt", "data2.txt"],
     verbose=False)
 # Returns: None
@@ -698,7 +771,7 @@ parallel_zip("echo 'This runs silently for {file}'",
 #### String Output
 ```python
 # Get output as single string (good for single commands)
-parallel_zip("echo 'Line 1 for {file}'; echo 'Line 2 for {file}'",
+parallel_zip("""echo 'Line 1 for {file}'; echo 'Line 2 for {file}'""",
     file=["data1.txt"],
     verbose=True, lines=False)
 # Returns: 'Line 1 for data1.txt\nLine 2 for data1.txt\n'
@@ -707,7 +780,7 @@ parallel_zip("echo 'Line 1 for {file}'; echo 'Line 2 for {file}'",
 #### List Output (Default for verbose=True)
 ```python
 # Get output as list of lines (best for processing)
-parallel_zip("echo 'Line 1 for {file}'; echo 'Line 2 for {file}'",
+parallel_zip("""echo 'Line 1 for {file}'; echo 'Line 2 for {file}'""",
     file=["data1.txt"],
     verbose=True, lines=True)
 # Returns: ['Line 1 for data1.txt', 'Line 2 for data1.txt']
@@ -720,13 +793,13 @@ Control how `parallel_zip` responds to command failures.
 #### Continue on Failure (Default)
 ```python
 # Handle expected failures gracefully
-parallel_zip("grep 'nonexistent_pattern' sample_data/{file} || echo 'No match in {file}'",
+parallel_zip("""grep 'nonexistent_pattern' sample_data/{file} || echo 'No match in {file}'""",
     file=["data1.txt", "data2.txt"],
     strict=False, verbose=True, lines=True)
 # Returns: ['No match in data1.txt', 'No match in data2.txt']
 
 # Commands that naturally return non-zero (like grep with no matches)
-parallel_zip("grep 'NOTFOUND' sample_data/{file}",
+parallel_zip("""grep 'NOTFOUND' sample_data/{file}""",
     file=["data1.txt", "data2.txt"],
     strict=False, verbose=True, lines=True)
 # Returns: []  # Empty results, but no error
@@ -735,7 +808,7 @@ parallel_zip("grep 'NOTFOUND' sample_data/{file}",
 #### Strict Mode - Stop on Any Failure
 ```python
 # Stop processing if any command fails
-parallel_zip("test -f sample_data/{file} && echo '{file} exists'",
+parallel_zip("""test -f sample_data/{file} && echo '{file} exists'""",
     file=["data1.txt", "missing.txt", "data2.txt"],
     strict=True, verbose=True, lines=True)
 # Output:
@@ -750,7 +823,7 @@ parallel_zip("test -f sample_data/{file} && echo '{file} exists'",
 #### Mixed Success/Failure Handling
 ```python
 # Handle mixed scenarios with proper shell logic
-parallel_zip("echo 'Testing {file}' && test -f sample_data/{file} && echo 'EXISTS' || echo 'MISSING'",
+parallel_zip("""echo 'Testing {file}' && test -f sample_data/{file} && echo 'EXISTS' || echo 'MISSING'""",
     file=["data1.txt", "missing.txt", "data2.txt"],
     strict=False, verbose=True, lines=True)
 # Returns:
@@ -762,13 +835,13 @@ parallel_zip("echo 'Testing {file}' && test -f sample_data/{file} && echo 'EXIST
 #### Preview and Execute Pattern
 ```python
 # Step 1: Preview commands
-commands = parallel_zip("find sample_data -name '*{pattern}*' -type f",
+commands = parallel_zip("""find sample_data -name '*{pattern}*' -type f""",
     cross=Cross(pattern=["data", "sample", "server"]),
     dry_run=True)
 print("Will execute:", commands)
 
 # Step 2: Execute after verification
-result = parallel_zip("find sample_data -name '*{pattern}*' -type f",
+result = parallel_zip("""find sample_data -name '*{pattern}*' -type f""",
     cross=Cross(pattern=["data", "sample", "server"]),
     verbose=True, lines=True)
 # Returns:
@@ -778,7 +851,7 @@ result = parallel_zip("find sample_data -name '*{pattern}*' -type f",
 #### Verbose Pipeline Debugging
 ```python
 # Add echo statements to track pipeline progress
-parallel_zip("echo 'Starting {operation}' && {cmd} sample_data/{file} && echo 'Completed {operation}'",
+parallel_zip("""echo 'Starting {operation}' && {cmd} sample_data/{file} && echo 'Completed {operation}'""",
     file=["data1.txt", "numbers.txt"],
     operation=["count_lines", "sort_content"],
     cmd=["wc -l", "sort"],
@@ -790,7 +863,7 @@ parallel_zip("echo 'Starting {operation}' && {cmd} sample_data/{file} && echo 'C
 #### Parameter Substitution Debugging
 ```python
 # Debug what parameters will be substituted
-parallel_zip("echo 'File: {file}, Pattern: {pattern}, Command will be: grep {pattern} sample_data/{file}'",
+parallel_zip("""echo 'File: {file}, Pattern: {pattern}, Command will be: grep {pattern} sample_data/{file}'""",
     file=["data1.txt"],
     cross=Cross(pattern=["line", "data"]),
     dry_run=True)
@@ -803,10 +876,10 @@ parallel_zip("echo 'File: {file}, Pattern: {pattern}, Command will be: grep {pat
 
 ```python
 # pz() also supports strict mode
-pz("grep 'line' sample_data/data1.txt", strict=False)
+pz("""grep 'line' sample_data/data1.txt""", strict=False)
 # Returns: ['Sample data line one', 'This is line two', 'Final line three']
 
-pz("grep 'NOTFOUND' sample_data/data1.txt", strict=False)
+pz("""grep 'NOTFOUND' sample_data/data1.txt""", strict=False)
 # Returns: []  # No error, just empty results
 ```
 
@@ -909,7 +982,7 @@ Handle complex shell syntax safely and correctly.
 #### Shell Quoting for AWK
 ```python
 # Use single quotes to protect AWK syntax - no double braces needed
-parallel_zip("awk '{print $1, $3}' sample_data/{file}",
+parallel_zip("""awk '{print $1, $3}' sample_data/{file}""",
     file=["sample1.txt", "sample2.txt"],
     verbose=True, lines=True)
 # Returns:
@@ -929,82 +1002,9 @@ pz("""awk '{sum += $3; count++} END {print "Total items:", count, "Sum:", sum}' 
 #### Regular Expressions and Pattern Matching
 ```python
 # Complex regex patterns with proper escaping
-parallel_zip("grep -E '{pattern}' sample_data/{file} || echo 'No matches'",
+parallel_zip("""grep -E '{pattern}' sample_data/{file} || echo 'No matches'""",
     file=["data1.txt", "server_logs.txt"],
     cross=Cross(pattern=["^[A-Z]", "[0-9]+", "line$"]),
-    verbose=True, lines=True)
-```
-
-### Complex Cross Products
-
-Scale cross products to multiple dimensions and mixed parameter types.
-
-#### Three-Dimensional Cross Products
-```python
-# Every combination across 3 parameter sets
-parallel_zip("echo 'Processing {file} with {tool} at {quality} quality'",
-    file=["data1.txt"],
-    cross=Cross(
-        tool=["grep", "awk"],
-        quality=["low", "high"],
-        mode=["fast", "thorough"]
-    ),
-    dry_run=True)
-# Returns: 8 combinations (2×2×2)
-```
-
-#### Mixed Zipped and Cross Parameters
-```python
-# Combine zipped parameters with cross products
-parallel_zip("echo 'File pair: {input}->{output}, using {method} with {setting}'",
-    input=["data1.txt", "data2.txt"],           # Zipped
-    output=["result1.txt", "result2.txt"],      # Zipped  
-    cross=Cross(
-        method=["copy", "transform"],            # Cross
-        setting=["default", "optimized"]        # Cross
-    ),
-    dry_run=True)
-# Returns:
-["echo 'File pair: data1.txt->result1.txt, using copy with default'",
- "echo 'File pair: data1.txt->result1.txt, using copy with optimized'",
- "echo 'File pair: data1.txt->result1.txt, using transform with default'", 
- "echo 'File pair: data1.txt->result1.txt, using transform with optimized'",
- "echo 'File pair: data2.txt->result2.txt, using copy with default'",
- "echo 'File pair: data2.txt->result2.txt, using copy with optimized'",
- "echo 'File pair: data2.txt->result2.txt, using transform with default'",
- "echo 'File pair: data2.txt->result2.txt, using transform with optimized'"]
-```
-
-### Advanced Shell Features
-
-#### Complex Conditional Logic
-```python
-# Advanced shell conditionals in single lines
-parallel_zip("size=$(wc -c < sample_data/{file}) && echo 'File {file}: $size bytes' && if [ $size -gt 500 ]; then echo 'Large file' && head -3 sample_data/{file}; else echo 'Small file' && cat sample_data/{file}; fi",
-    file=["data1.txt", "data3.txt"],
-    verbose=True, lines=True)
-```
-
-### Performance and Optimization
-
-#### Batch Processing Strategies
-```python
-# Process files in logical groups
-parallel_zip("""echo 'Batch {batch}: processing {file}' && {processor} sample_data/{file}""",
-    file=["data1.txt", "data2.txt", "sample1.txt", "sample2.txt"],
-    batch=["text", "text", "products", "products"],
-    processor=["wc -l", "wc -l", "awk '{print $1}'", "awk '{print $1}'"],
-    verbose=True, lines=True)
-```
-
-#### Memory and Resource Management
-```python
-# Process large datasets with chunking
-parallel_zip("""echo '>> Processing chunk {chunk} of {file}' && head -{num_lines} sample_data/{file} | tail -{chunk_size}""",
-    file=["data3.txt"],
-    chunk=[1, 2, 3],
-    num_lines=[5, 10, 15],
-    chunk_size=10,
     verbose=True, lines=True)
 ```
 
@@ -1024,11 +1024,27 @@ Avoid common pitfalls and optimize your `parallel_zip` workflows with these prov
 
 ### Common Pitfalls and Solutions
 
+#### Reserved Parameter Names
+```python
+# WRONG - Using reserved parameter names
+parallel_zip("""echo '{command}'""",
+    command="test",  # 'command' is reserved!
+    dry_run=True)
+# This will cause unexpected behavior
+
+# CORRECT - Use different parameter names
+parallel_zip("""echo '{cmd}'""",
+    cmd="test",
+    dry_run=True)
+```
+
+**Reserved parameters**: `command`, `cross`, `verbose`, `lines`, `dry_run`, `strict`, `java_memory`
+
 #### Mismatched Parameter List Lengths
 ```python
 # WRONG - Lists of different lengths
 try:
-    parallel_zip("echo '{input} -> {output}'",
+    parallel_zip("""echo '{input} -> {output}'""",
         input=["a", "b", "c"],  # Length 3
         output=["x", "y"],      # Length 2 - will fail
         dry_run=True)
@@ -1037,7 +1053,7 @@ except ValueError as e:
 # Error: All named parameters must have the same length or be single values for broadcasting
 
 # CORRECT - Use broadcasting or matching lengths
-parallel_zip("echo '{input} -> {output}'",
+parallel_zip("""echo '{input} -> {output}'""",
     input=["a", "b", "c"],      # Length 3
     output="default",           # Single value broadcasts
     dry_run=True)
@@ -1046,117 +1062,12 @@ parallel_zip("echo '{input} -> {output}'",
 #### Shell Variable Expansion Issues
 ```python
 # WRONG - Double quotes let shell expand $NF (becomes empty)
-pz('echo "Field count: $NF"')
+pz("""echo "Field count: $NF" """)
 # Returns: ['Field count: ']
 
 # CORRECT - Single quotes protect $ from shell expansion  
-pz("echo 'Field count: $NF'")
+pz("""echo 'Field count: $NF'""")
 # Returns: ['Field count: $NF']
-```
-
-#### Cross Product Explosion
-```python
-# Be careful - cross products multiply quickly!
-large_cross = parallel_zip("echo '{a}-{b}-{c}'",
-    cross=Cross(
-        a=["1", "2", "3"],       # 3 options
-        b=["x", "y", "z"],       # 3 options  
-        c=["red", "blue"]        # 2 options
-    ),
-    dry_run=True)              # 3×3×2 = 18 combinations!
-# Large cross product generates 18 commands
-# First few: ["echo '1-x-red'", "echo '1-x-blue'", "echo '1-y-red'"]
-```
-
-### Best Practices
-
-#### Always Test with Dry Run First
-```python
-# CRITICAL - Preview dangerous commands
-commands = parallel_zip("rm sample_data/{file}",  # Dangerous!
-    file=["temp1.txt", "temp2.txt"],
-    dry_run=True)
-print("Commands that would run:", commands)
-# Returns: ['rm sample_data/temp1.txt', 'rm sample_data/temp2.txt']
-# (Good thing we used dry_run!)
-```
-
-#### Handle File Existence Gracefully
-```python
-# Robust file processing with existence checks
-parallel_zip("[ -f sample_data/{file} ] && echo 'Processing {file}' || echo 'SKIP: {file} not found'",
-    file=["data1.txt", "missing.txt", "data2.txt"],
-    verbose=True, lines=True)
-# Returns: ['Processing data1.txt', 'SKIP: missing.txt not found', 'Processing data2.txt']
-```
-
-#### When NOT to Use parallel_zip
-```python
-# DON'T use for simple commands without parameters
-parallel_zip("ls", dry_run=True)  # Overkill!
-# Returns: ['ls']
-
-# DO use pz() for simple shell commands
-pz("ls sample_data")
-# Returns: ['data1.txt', 'data2.txt', 'data3.txt', ...]
-```
-
-#### Debug Parameter Substitution
-```python
-# Preview parameter substitution and Python expressions
-parallel_zip("echo 'Input: {input}, Length: {len(input)}, Upper: {input.upper()}'",
-    input=["test", "debug"],
-    dry_run=True)
-# Returns: ["echo 'Input: test, Length: 4, Upper: TEST'", "echo 'Input: debug, Length: 5, Upper: DEBUG'"]
-```
-
-### Performance Optimization
-
-#### Broadcasting vs Cross Products
-```python
-# Efficient broadcasting (single value expands)
-broadcast_result = parallel_zip("echo 'Processing {file} with {tool}'",
-    file=["data1.txt", "data2.txt", "data3.txt"],
-    tool="grep",  # Single value broadcasts
-    dry_run=True)
-# Broadcasting: 3 commands
-
-# Cross product (generates more combinations)
-cross_result = parallel_zip("echo 'Processing {file} with {tool}'",
-    file=["data1.txt", "data2.txt", "data3.txt"],
-    cross=Cross(tool=["grep", "awk", "sed"]),
-    dry_run=True)
-# Cross product: 9 commands (3×3)
-```
-
-#### Memory Management for Large Files
-```python
-# Process large files in chunks
-parallel_zip("echo 'Analyzing {file}' && head -{num_lines} sample_data/{file} | tail -2",
-    file=["data3.txt"],
-    num_lines=[10],
-    verbose=True, lines=True)
-# Returns: ['Analyzing data3.txt', 'Application started at 2024-01-15 09:30:00', 'Loading user preferences']
-```
-
-### Error Handling Patterns
-
-#### Safe Shell Commands
-```python
-# Use && for command chaining to stop on failure
-parallel_zip("echo 'File: {file}' && head -2 sample_data/{file}",
-    file=["data1.txt"],
-    verbose=True, lines=True)
-# Returns: ['File: data1.txt', 'Sample data line one', 'This is line two']
-```
-
-#### Graceful Fallback Handling
-```python
-# Handle missing tools with fallback (single-line shell conditional)
-parallel_zip("echo 'Attempting to process {file}' && if command -v nonexistent_tool >/dev/null 2>&1; then nonexistent_tool sample_data/{file}; else echo 'Tool not found, using fallback' && cat sample_data/{file} | wc -l; fi",
-    file=["data1.txt"],
-    verbose=True, lines=True)
-# Returns: ['Attempting to process data1.txt', 'Tool not found, using fallback', '2']
 ```
 
 ### Architecture Guidelines
@@ -1207,18 +1118,6 @@ parallel_zip("echo 'Attempting to process {file}' && if command -v nonexistent_t
 - **GNU parallel** (required)
 - Standard Unix tools (bash, etc.)
 
-## Performance and Parallelization
-
-`parallel_zip` leverages GNU parallel for job execution, which provides:
-
-- **Automatic CPU detection**: By default runs as many jobs as you have CPU cores
-- **Efficient job scheduling**: Optimal load balancing across available cores  
-- **Memory management**: Prevents system overload
-- **Output handling**: Maintains output order and prevents interleaving
-- **Error handling**: Continues processing other jobs if one fails
-
-The performance characteristics depend on GNU parallel's implementation. For CPU-bound tasks, expect near-linear speedup with the number of cores. For I/O-bound tasks, performance will depend on your storage system.
-
 ## Options Reference
 
 ### Core Parameters
@@ -1245,62 +1144,6 @@ Note: As of v1.1.0, commands without parameters are supported. Running `parallel
 - stderr/stdout are captured separately
 - Partial results are available even if some jobs fail
 
-## Bioinformatics Examples
-
-### RNA-seq Pipeline
-
-```python
-# Map RNA-seq reads to multiple reference genomes
-samples = ['treated', 'control']
-references = ['hg38', 'mm10']
-
-parallel_zip("""
-hisat2 --index {ref_path}/{ref} -1 {input_path}/{r1}.fq.gz -2 {input_path}/{r2}.fq.gz -S {output_path}/{sample}_{ref}.sam
-""",
-    r1=[f'{sample}_R1' for sample in samples],
-    r2=[f'{sample}_R2' for sample in samples], 
-    cross=Cross(sample=samples, ref=references),
-    ref_path='~/references',
-    input_path='trimmed_reads',
-    output_path='alignments'
-)
-
-# For simpler cases without parallelization, you can also use:
-# pz("hisat2 --index genome.fa -1 sample_R1.fq -2 sample_R2.fq -S output.sam")
-```
-
-### Variant Calling
-
-```python
-# Run variant calling with different parameters
-parallel_zip("""
-bcftools mpileup -f {reference} {bam} | 
-bcftools call -mv -Oz -o {output_dir}/{sample}_q{quality}_d{depth}.vcf.gz
-""",
-    bam=["sample1.bam", "sample2.bam", "sample3.bam"],
-    sample=["sample1", "sample2", "sample3"],
-    cross=[
-        {"quality": [20, 30]},
-        {"depth": [5, 10]}
-    ],
-    reference="genome.fa",
-    output_dir="variants"
-)
-```
-
-### Quality Control
-
-```python
-# Run FastQC on multiple files with different options
-parallel_zip(
-    "fastqc {input} --outdir {outdir} --threads {threads} {options}",
-    input=["sample1_R1.fq.gz", "sample1_R2.fq.gz", "sample2_R1.fq.gz", "sample2_R2.fq.gz"],
-    cross=[{"options": ["--noextract", "--extract"]}],
-    outdir="qc_results",
-    threads=4
-)
-```
-
 ## License
 
 This project is licensed under the GNU General Public License v3.0 (GPL-3.0), consistent with GNU parallel which this tool depends upon and extends.
@@ -1318,31 +1161,26 @@ You can also get the citation notice by running:
 parallel --citation
 ```
 
-## Contributing
+## Testing
 
-Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
-
-### Development Setup
+To run the test suite, first install ward:
 
 ```bash
-# Clone or download parallel_zip.py
-# Install in development mode
-pip install -e /path/to/parallel_zip/directory
-python -m pytest tests/  # Run tests (if available)
+pip install ward
 ```
 
-### Running Tests
+Then run tests using:
 
 ```bash
-# Run the parallel_zip test suite
-bash parallel_zip_test.sh
+# Run all tests
+ward
 
-# Run the pz function test suite
-bash pz_test.sh
-
-# Or run individual tests
-python -c "from parallel_zip import parallel_zip; print('Import successful')"
+# Run specific test file
+ward --path test_parallel_zip.py
+ward --path test_pz.py
 ```
+
+Future tests will follow the naming convention `test_<module>.py`.
 
 ## FAQ
 
