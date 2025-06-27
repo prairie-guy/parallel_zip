@@ -22,6 +22,11 @@ for in_path, out_path in zip(in_paths, out_paths):
         bgzip -@ {nc} -c > {fname(out_path,sample,'tsv.gz')}
 ```
 
+``` markdown
+CPU times: user 951 ms, sys: 113 ms, total: 1.06 s
+Wall time: 6h 16m 42s
+```
+
 **After** - `parallel_zip` using native shell code, portable to Jupyter or Python, with parallelism built-in for speed 
 ``` python
 %%time
