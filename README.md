@@ -6,7 +6,7 @@
 
 ## See It In Action
 
-**Before** - Python script depending upon  Juptyer magic `!` command or else  `subprocess` function in Python
+**Before** - Python script depending upon  Juptyer magic `!` command or  `subprocess` function to execute shell or unix code
 ``` python
 %%time
 
@@ -28,7 +28,7 @@ CPU times: user 951 ms, sys: 113 ms, total: 1.06 s
 Wall time: 6h 16m 42s
 ```
 
-**After** - `parallel_zip` using native shell code, portable to Jupyter or Python, with parallelism built-in for speed 
+**After** - `parallel_zip` using native shell code, portable to Jupyter or Python and with parallelism built-in for speed 
 ``` python
 %%time
 from parallel_zip import parallel_zip, Cross
@@ -50,7 +50,7 @@ Wall time: 41min 27s
 ```
 
 
-**What is executed:** with `dry_run=True` 
+**What is executed -** with `dry_run=True` 
 ```python
 parallel_zip(
     """
