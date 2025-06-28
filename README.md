@@ -113,7 +113,7 @@ pz("""ls -l {os.getcwd()} | cut -f1 -d' ' | sed s/--// | sed s/^-// | awk '$1 ~ 
 - **Eliminate boilerplate**: Skip tedious setup code for parallel execution and parameter management
 
 ### **Cross-Product Power Without Pain**
-- **Automatic parameter combinations**: Generate all combinations of multiple parameter sets instantly
+- **Automatic parameter combinations**: Generate all combinations of multiple parameter sets
 - **No manual combinatorics**: Skip the nested loop math - just specify what parameters to vary
 - **Broadcasting magic**: Single values automatically expand across parameter lists when needed
 
@@ -124,7 +124,7 @@ pz("""ls -l {os.getcwd()} | cut -f1 -d' ' | sed s/--// | sed s/^-// | awk '$1 ~ 
 - **Immediate feedback**: Quick `pz()` commands for one-off tasks and data exploration
 
 ### **Handles the Hard Stuff**
-- **Shell quoting protection**: Proper handling of `$`, quotes, and special characters that break naive approaches
+- **Shell quoting protection**: Proper handling of `$`, quotes, and special characters that are complicated within Python
 - **Smart error handling**: Choose strict mode for critical pipelines or continue-on-failure for exploratory work
 - **Python expression evaluation**: Embed calculations and string manipulation directly in command templates
 
