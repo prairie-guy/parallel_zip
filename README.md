@@ -6,7 +6,7 @@
 
 ## See It In Action
 
-**Before** - Python script depending upon  Juptyer magic `!` command or  `subprocess` function to execute shell or unix code
+**Before** - Python script depending upon Juptyer magic `!-command` or Python `subprocess` function to execute shell or Unix code
 ``` python
 %%time
 
@@ -28,7 +28,7 @@ CPU times: user 951 ms, sys: 113 ms, total: 1.06 s
 Wall time: 6h 16m 42s
 ```
 
-**After** - `parallel_zip` using native shell code, portable to Jupyter or Python and with parallelism built-in for speed 
+**After** - `parallel_zip` using native shell code, portable to Jupyter or Python with parallelism built-in for speed 
 ``` python
 %%time
 from parallel_zip import parallel_zip, Cross
@@ -50,7 +50,7 @@ Wall time: 41min 27s
 ```
 
 
-**What is executed -** with `dry_run=True` 
+**What is executed -** using `dry_run=True` 
 ```python
 parallel_zip(
     """
@@ -70,7 +70,7 @@ samtools view -e "rlen<100000" -h dedup_MT/E1.bam |     hisat-3n-table -p 6 --un
 samtools view -e "rlen<100000" -h dedup_MT/E2.bam |     hisat-3n-table -p 6 --unique-only --alignments - --ref ../../reference/fasta/human.fa --output-name /dev/stdout --base-change C,T |     bgzip -@ 6 -c > conv_unconv3n_MT/E2.tsv.gz
 samtools view -e "rlen<100000" -h dedup_MT/E3.bam |     hisat-3n-table -p 6 --unique-only --alignments - --ref ../../reference/fasta/human.fa --output-name /dev/stdout --base-change C,T |     bgzip -@ 6 -c > conv_unconv3n_MT/E3.tsv.gz
 .
-. . . [27 Total]. . .
+. . . [27 Total] . . .
 . 
 samtools view -e "rlen<100000" -h dedup_human/U3.bam |     hisat-3n-table -p 6 --unique-only --alignments - --ref ../../reference/fasta/human.fa --output-name /dev/stdout --base-change C,T |     bgzip -@ 6 -c > conv_unconv3n_human/U3.tsv.gz
 ```
