@@ -50,20 +50,31 @@ Wall time: 41min 27s
 ```
 
 
-
 **See what gets executed:** with `dry_run=True` 
 ```python
-parallel_zip("""
-    hisat-3n --index {ref} -1 reads/{sample}_R1.fq.gz -2 reads/{sample}_R2.fq.gz -S alignments/{sample}_{ref}.sam
-""",
-    cross=Cross(sample=['treated', 'control'], ref=['hg38', 'mm10']),
-    dry_run=True)
-Out[23]: 
-["hisat-3n --index hg38 -1 reads/treated_R1.fq.gz -2 reads/treated_R2.fq.gz -S alignments/treated_hg38.sam",
- "hisat-3n --index mm10 -1 reads/treated_R1.fq.gz -2 reads/treated_R2.fq.gz -S alignments/treated_mm10.sam",
- "hisat-3n --index hg38 -1 reads/control_R1.fq.gz -2 reads/control_R2.fq.gz -S alignments/control_hg38.sam",
- "hisat-3n --index mm10 -1 reads/control_R1.fq.gz -2 reads/control_R2.fq.gz -S alignments/control_mm10.sam"]
+parallel_zip(
+    """
+    samtools view -e "rlen<100000" -h {in_path}/{sample}.bam | \
+    hisat-3n-table -p 6 --unique-only --alignments - --ref {get_ref(ref,'fa')} --output-name /dev/stdout --base-change C,T | \
+    bgzip -@ 6 -c > {out_path}/{sample}.tsv.gz
+    """, 
+        in_paths = ['dedup_MT', 'dedup_2', 'dedup_human']  , 
+        out_paths= ['conv_unconv3n_MT', 'conv_unconv3n_2', 'conv_unconv3n_human']
+
+    cross=Cross(sample=['E1', 'E2', 'E3', 'Z1', 'Z2', 'Z3', 'U1', 'U2', 'U3']))
 ```
+
+
+``` python
+samtools view -e "rlen<100000" -h dedup_MT/E1.bam |     hisat-3n-table -p 6 --unique-only --alignments - --ref ../../reference/fasta/human.fa --output-name /dev/stdout --base-change C,T |     bgzip -@ 6 -c > conv_unconv3n_MT/E1.tsv.gz
+samtools view -e "rlen<100000" -h dedup_MT/E2.bam |     hisat-3n-table -p 6 --unique-only --alignments - --ref ../../reference/fasta/human.fa --output-name /dev/stdout --base-change C,T |     bgzip -@ 6 -c > conv_unconv3n_MT/E2.tsv.gz
+samtools view -e "rlen<100000" -h dedup_MT/E3.bam |     hisat-3n-table -p 6 --unique-only --alignments - --ref ../../reference/fasta/human.fa --output-name /dev/stdout --base-change C,T |     bgzip -@ 6 -c > conv_unconv3n_MT/E3.tsv.gz
+.
+. . . [27 Total]. . .
+. 
+samtools view -e "rlen<100000" -h dedup_human/U3.bam |     hisat-3n-table -p 6 --unique-only --alignments - --ref ../../reference/fasta/human.fa --output-name /dev/stdout --base-change C,T |     bgzip -@ 6 -c > conv_unconv3n_human/U3.tsv.gz
+```
+
 
 **Quick shell commands** with the `pz()` function:
 ```python
