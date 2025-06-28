@@ -76,7 +76,7 @@ samtools view -e "rlen<100000" -h dedup_human/U3.bam |     hisat-3n-table -p 6 -
 ```
 
 
-**Quick shell commands** with the `pz()` function:
+**Quick shell commands -** with the `pz()` function:
 ```python
 from parallel_zip import pz
 
@@ -88,7 +88,7 @@ pz("ls -la *.txt")
 pz("head -3 data.csv")
 # Returns: ['id,name,value', '1,apple,3.5', '2,banana,2.7']
 
-# Complex shell command with natural syntax (no delimiting hell)
+# Complex shell command with natural shell syntax (no delimiting hell)
 pz("""ls -l {os.getcwd()} | cut -f1 -d' ' | sed s/--// | sed s/^-// | awk '$1 ~ /x/ {split($1, parts, "-"); print parts[1]}' """)
 # Returns: ['drwxrwxr', 'drwxrwxr', 'drwxrwxr', 'drwxrwxr']
 ```
