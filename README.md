@@ -60,8 +60,8 @@ parallel_zip(
     """, 
         in_paths = ['dedup_MT', 'dedup_2', 'dedup_human']  , 
         out_paths= ['conv_unconv3n_MT', 'conv_unconv3n_2', 'conv_unconv3n_human']
-
-    cross=Cross(sample=['E1', 'E2', 'E3', 'Z1', 'Z2', 'Z3', 'U1', 'U2', 'U3']))
+        cross=Cross(sample=['E1', 'E2', 'E3', 'Z1', 'Z2', 'Z3', 'U1', 'U2', 'U3']),
+        dry_run=True)
 ```
 
 
