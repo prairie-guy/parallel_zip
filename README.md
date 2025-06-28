@@ -50,7 +50,7 @@ Wall time: 41min 27s
 ```
 
 
-**See what gets executed:** with `dry_run=True` 
+**What is executed:** with `dry_run=True` 
 ```python
 parallel_zip(
     """
